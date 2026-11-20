@@ -33,32 +33,34 @@ jobs:
 
       - name: Prepare Beta APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.2.0-beta.apk
-          ls -lh StatHD-v1.2.0-beta.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.3.0-beta.apk
+          ls -lh StatHD-v1.3.0-beta.apk
 
       - name: Upload Beta APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-Beta-APK
-          path: StatHD-v1.2.0-beta.apk
+          path: StatHD-v1.3.0-beta.apk
           if-no-files-found: error
 
       - name: Publish Pre-Release Beta APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.2.0-beta
-          name: "StatHD v1.2.0-beta (Pre-Release Testing Build)"
+          tag_name: v1.3.0-beta
+          name: "StatHD v1.3.0-beta — Wink GPU Ultra-HD Restoration Engine (Pre-Release)"
           body: |
-            ### 🧪 StatHD v1.2.0-beta (Pre-Release Testing Build)
-            > **Note:** This is an active **Beta / Pre-Release** build for testing WhatsApp Status bypass quality before final stable release.
+            ### 🧪 StatHD v1.3.0-beta (Wink GPU Quality Restoration Build)
+            > **Note:** Active **Beta / Pre-Release** build (`prerelease: true`).
 
-            #### What's Being Tested in v1.2.0-beta:
-            - **100% Lossless Bit-for-Bit Stream Copy (`MediaExtractor` + `MediaMuxer`):** Cuts 30s/45s clips with **ZERO re-encoding** when source video is `<= 1280px` (0% pixel loss from original).
-            - **1.0s Keyframe H.264 High-Clarity Encoding:** Locks a 1-second I-frame interval (`setiFrameIntervalSeconds(1.0f)`) for fast gaming motion recovery.
-            - **Gamer Full-Screen Mode (`Rotate 90° Vertical`):** Rotates landscape gameplay 90° (`576x1280` / `720x1280`) to fill 100% of WhatsApp Status's vertical display.
+            #### New in v1.3.0-beta:
+            - **✨ Wink GPU Ultra-HD Restoration Shader (`WinkUltraHdEffect.kt`):** Real-time 9-tap OpenGL ES 2.0 GPU fragment shader combining:
+              1. **Edge-Preserving Bilateral De-Blocking & Mosquito Noise Removal:** Smooths flat compression blocks on grass/sky/skin without blurring borders.
+              2. **Contrast-Adaptive Sharpening (CAS) with Anti-Halo Clamp:** Reconstructs crisp text, hero HP bars, outlines, and fine details without white ringing.
+              3. **Shadow-Safe Vibrance Pop:** Boosts muted colors smoothly while preserving natural dark shadow visibility.
+            - **🔥 Wink MAX Game/Anime Clarifier Toggle:** Extra detail pop mode for gaming and anime clips.
 
             📲 **Direct Beta APK Download:**
-            Tap **`StatHD-v1.2.0-beta.apk`** under **Assets** below to install on your Android device.
-          files: StatHD-v1.2.0-beta.apk
+            Tap **`StatHD-v1.3.0-beta.apk`** under **Assets** below to install on your Android device.
+          files: StatHD-v1.3.0-beta.apk
           draft: false
           prerelease: true

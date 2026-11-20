@@ -63,9 +63,9 @@ class MainActivity : AppCompatActivity() {
         val maxLongSidePx: Int,
         val maxBitrateBps: Int
     ) {
-        CLIP_30S_ULTRA("30s Lossless / Ultra HD", 30_000L, 1280, 3_200_000),
-        CLIP_45S_HD("45s Lossless / High Clarity", 45_000L, 1280, 2_000_000),
-        CLIP_60S_FULL("60s 1-Minute Status", 60_000L, 1280, 1_450_000)
+        CLIP_30S_ULTRA("30s Wink Ultra HD (2.65 Mbps)", 30_000L, 1280, 2_650_000),
+        CLIP_45S_HD("45s Wink High Clarity (1.80 Mbps)", 45_000L, 1280, 1_800_000),
+        CLIP_60S_FULL("60s 1-Minute Status (1.38 Mbps)", 60_000L, 1280, 1_380_000)
     }
 
     private lateinit var videoPreview: VideoView
@@ -73,6 +73,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvSourceSpecs: TextView
     private lateinit var tvResolutionGuardInfo: TextView
     private lateinit var btnPickVideo: MaterialButton
+    private lateinit var switchWinkRestore: SwitchMaterial
+    private lateinit var switchWinkMax: SwitchMaterial
     private lateinit var cardPreset720: LinearLayout
     private lateinit var cardPreset1080: LinearLayout
     private lateinit var cardPreset60s: LinearLayout
@@ -130,6 +132,8 @@ class MainActivity : AppCompatActivity() {
         tvSourceSpecs = findViewById(R.id.tvSourceSpecs)
         tvResolutionGuardInfo = findViewById(R.id.tvResolutionGuardInfo)
         btnPickVideo = findViewById(R.id.btnPickVideo)
+        switchWinkRestore = findViewById(R.id.switchWinkRestore)
+        switchWinkMax = findViewById(R.id.switchWinkMax)
         cardPreset720 = findViewById(R.id.cardPreset720)
         cardPreset1080 = findViewById(R.id.cardPreset1080)
         cardPreset60s = findViewById(R.id.cardPreset60s)
@@ -167,6 +171,11 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
+        switchWinkRestore.setOnCheckedChangeListener { _, isChecked ->
+            switchWinkMax.isEnabled = isChecked
+            updateResolutionGuardReadout()
+        }
+        switchWinkMax.setOnCheckedChangeListener { _, _ -> updateResolutionGuardReadout() }
         switchRotateVertical.setOnCheckedChangeListener { _, _ -> updateResolutionGuardReadout() }
         switchCrispBoost.setOnCheckedChangeListener { _, _ -> updateResolutionGuardReadout() }
         switchHdrToneMap.setOnCheckedChangeListener { _, _ -> updateResolutionGuardReadout() }
@@ -268,7 +277,7 @@ class MainActivity : AppCompatActivity() {
             sourceHeight = 0
             sourceDurationMs = 0L
             sourceBitrateBps = 0L
-            tvSourceSpecs.text = "Video loaded • Ready for StatHD v1.2 optimization"
+            tvSourceSpecs.text = "Video loaded • Ready for Wink GPU Ultra-HD Restoration"
         } finally {
             try {
                 retriever.release()
@@ -319,14 +328,8 @@ class MainActivity : AppCompatActivity() {
         updateResolutionGuardReadout()
     }
 
-    /**
-     * Checks if we can perform a 100% LOSSLESS BIT-FOR-BIT STREAM COPY (0% pixel loss, identical to Gambar 3!)
-     * Condition:
-     * 1. Source resolution long-side is already <= 1280px (e.g. 1280x576)
-     * 2. No rotation or color shader requested
-     * 3. Estimated clip size for the trimmed window is <= 12.0 MB
-     */
     private fun canUseLosslessDirectCopy(): Boolean {
+        if (switchWinkRestore.isChecked) return false
         if (sourceWidth <= 0 || sourceHeight <= 0 || sourceDurationMs <= 0L) return false
         val longSide = max(sourceWidth, sourceHeight)
         if (longSide > currentPreset.maxLongSidePx) return false
@@ -339,7 +342,6 @@ class MainActivity : AppCompatActivity() {
             ((sourceBitrateBps / 8.0) * (clipDurMs / 1000.0)).toLong()
         }
 
-        // If the trimmed slice is already <= 11.5 MB and <= 1280px, ZERO re-encoding is needed!
         return estimatedSliceBytes in 1..(11_800_000L)
     }
 
@@ -362,14 +364,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateResolutionGuardReadout() {
         if (sourceWidth <= 0 || sourceHeight <= 0) {
-            tvResolutionGuardInfo.text = "Engine Mode: Smart Lossless Copy / 1280px Guard"
+            tvResolutionGuardInfo.text = "Engine Mode: Wink GPU Restoration + 1280px Guard"
             return
         }
 
         if (canUseLosslessDirectCopy()) {
             tvResolutionGuardInfo.text = String.format(
                 Locale.US,
-                "★ 100%% LOSSLESS STREAM COPY ACTIVE: %dx%d • Zero Re-Encoding (100%% Original Graphic!)",
+                "★ 100%% LOSSLESS STREAM COPY: %dx%d • Zero Re-Encoding",
                 sourceWidth,
                 sourceHeight
             )
@@ -379,22 +381,29 @@ class MainActivity : AppCompatActivity() {
         val effW = if (switchRotateVertical.isChecked) sourceHeight else sourceWidth
         val effH = if (switchRotateVertical.isChecked) sourceWidth else sourceHeight
         val scaled = computeSafeOutputDimensions()
+        val winkMode = if (switchWinkRestore.isChecked) {
+            if (switchWinkMax.isChecked) "✨ Wink MAX GPU Shader" else "✨ Wink Balanced GPU Shader"
+        } else {
+            "Standard H.264"
+        }
+
         if (scaled == null) {
             tvResolutionGuardInfo.text = String.format(
                 Locale.US,
-                "✓ Resolution Guard: %dx%d (1:1 Native Pixels • H.264 High-Quality Keyframe Lock)",
+                "✓ %s | %dx%d (1:1 Native Pixels • Zero Upscaling)",
+                winkMode,
                 effW,
                 effH
             )
         } else {
             tvResolutionGuardInfo.text = String.format(
                 Locale.US,
-                "✓ Resolution Guard: Scaling %dx%d ➔ %dx%d (Strict %dpx Long-Side Cap)",
+                "✓ %s | Scaling %dx%d ➔ %dx%d",
+                winkMode,
                 effW,
                 effH,
                 scaled.first,
-                scaled.second,
-                currentPreset.maxLongSidePx
+                scaled.second
             )
         }
     }
@@ -412,10 +421,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * 100% LOSSLESS BIT-FOR-BIT STREAM COPY using Android MediaExtractor + MediaMuxer.
-     * Copies exact compressed H.264 frames without decoding or re-encoding a single pixel!
-     */
     @SuppressLint("WrongConstant")
     private fun startLosslessStreamCut(inputUri: Uri, outFile: File) {
         btnOptimize.isEnabled = false
@@ -460,7 +465,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 if (videoTrackIndex == -1) {
-                    throw IllegalStateException("No video track found for lossless stream copy")
+                    throw IllegalStateException("No video track found")
                 }
 
                 muxer.start()
@@ -469,21 +474,16 @@ class MainActivity : AppCompatActivity() {
                     extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
                 }
 
-                val bufferSize = 2 * 1024 * 1024 // 2 MB packet buffer
-                val buffer = ByteBuffer.allocate(bufferSize)
+                val buffer = ByteBuffer.allocate(2 * 1024 * 1024)
                 val bufferInfo = MediaCodec.BufferInfo()
 
                 while (true) {
                     bufferInfo.offset = 0
                     bufferInfo.size = extractor.readSampleData(buffer, 0)
-                    if (bufferInfo.size < 0) {
-                        break
-                    }
+                    if (bufferInfo.size < 0) break
 
                     val sampleTimeUs = extractor.sampleTime
-                    if (sampleTimeUs > endUs) {
-                        break
-                    }
+                    if (sampleTimeUs > endUs) break
 
                     val trackIndex = extractor.sampleTrackIndex
                     val dstTrack = trackMap[trackIndex]
@@ -500,7 +500,6 @@ class MainActivity : AppCompatActivity() {
                     onLosslessCopySuccess(outFile)
                 }
             } catch (e: Exception) {
-                // Fallback to hardware encoder if lossless muxer encounters non-standard stream
                 mainHandler.post {
                     if (outFile.exists()) outFile.delete()
                     startStatHdTranscode(inputUri, outFile, allowHdrToneMap = switchHdrToneMap.isChecked)
@@ -531,7 +530,7 @@ class MainActivity : AppCompatActivity() {
 
         tvResultSpecs.text = String.format(
             Locale.US,
-            "★ MODE: 100%% LOSSLESS STREAM COPY (0%% Pixel Loss!)\nOutput: %dx%d (1:1 Original Pixels) | Size: %.2f MB (Source: %.2f MB)\nClip: %s ➔ %s | Status: <11 MB WA DIRECT PASSTHROUGH",
+            "★ MODE: 100%% LOSSLESS STREAM COPY (0%% Pixel Loss)\nOutput: %dx%d | Size: %.2f MB (Source: %.2f MB)\nClip: %s ➔ %s | Status: <11 MB WA DIRECT PASSTHROUGH",
             sourceWidth,
             sourceHeight,
             newSizeMb,
@@ -542,11 +541,7 @@ class MainActivity : AppCompatActivity() {
 
         videoPreview.setVideoPath(outFile.absolutePath)
         videoPreview.start()
-        Toast.makeText(
-            this,
-            "100% Lossless Cut Complete! Zero pixel loss from original video.",
-            Toast.LENGTH_LONG
-        ).show()
+        Toast.makeText(this, "100% Lossless Cut Complete!", Toast.LENGTH_LONG).show()
     }
 
     private fun computeSafeVideoBitrateBps(): Int {
@@ -557,7 +552,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         val audioBitrateBps = if (switchMuteAudio.isChecked) 0 else 128_000
-        val maxTotalBits = 10.4 * 1024.0 * 1024.0 * 8.0
+        // Keep output strictly <= 10.2 MB so WhatsApp Status never re-encodes the file
+        val maxTotalBits = 10.2 * 1024.0 * 1024.0 * 8.0
         val maxSafeVideoBps = ((maxTotalBits / clipDurationSec) - audioBitrateBps).toInt()
 
         return min(currentPreset.maxBitrateBps, max(900_000, maxSafeVideoBps))
@@ -572,9 +568,11 @@ class MainActivity : AppCompatActivity() {
 
         val targetBitrateBps = computeSafeVideoBitrateBps()
         val targetMbps = targetBitrateBps / 1_000_000.0
+        val winkActive = switchWinkRestore.isChecked
         tvProgressStatus.text = String.format(
             Locale.US,
-            "Initializing H.264 High-Clarity Encoder (%.2f Mbps • 1s Keyframes)...",
+            "Initializing %s (%.2f Mbps)...",
+            if (winkActive) "Wink GPU Ultra-HD Shader" else "H.264 High-Clarity Encoder",
             targetMbps
         )
 
@@ -597,6 +595,28 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         }
+
+        // Add Wink GPU Ultra-HD Restoration Shader (Bilateral De-Block + CAS Edge Sharpening + Vibrance)
+        if (winkActive) {
+            if (switchWinkMax.isChecked) {
+                videoEffects.add(
+                    WinkUltraHdEffect(
+                        sharpnessStrength = 0.92f,
+                        denoiseStrength = 0.52f,
+                        vibranceBoost = 0.11f
+                    )
+                )
+            } else {
+                videoEffects.add(
+                    WinkUltraHdEffect(
+                        sharpnessStrength = 0.65f,
+                        denoiseStrength = 0.38f,
+                        vibranceBoost = 0.06f
+                    )
+                )
+            }
+        }
+
         if (switchCrispBoost.isChecked) {
             videoEffects.add(Contrast(0.05f))
         }
@@ -622,7 +642,6 @@ class MainActivity : AppCompatActivity() {
         }
         val composition = compositionBuilder.build()
 
-        // Configure H.264 Encoder with 1.0s I-Frame interval for fast gaming motion recovery
         val videoEncoderSettings = VideoEncoderSettings.Builder()
             .setBitrate(targetBitrateBps)
             .setiFrameIntervalSeconds(1.0f)
@@ -659,10 +678,11 @@ class MainActivity : AppCompatActivity() {
 
         activeTransformer = transformer
         transformer.start(composition, outFile.absolutePath)
-        pollTransformerProgress(transformer, targetMbps)
+        pollTransformerProgress(transformer, targetMbps, winkActive)
     }
 
-    private fun pollTransformerProgress(transformer: Transformer, targetMbps: Double) {
+    private fun pollTransformerProgress(transformer: Transformer, targetMbps: Double, winkActive: Boolean) {
+        val label = if (winkActive) "Wink GPU De-Block + CAS Sharpen" else "H.264 1s-Keyframe"
         val runnable = object : Runnable {
             override fun run() {
                 val state = transformer.getProgress(progressHolder)
@@ -671,7 +691,8 @@ class MainActivity : AppCompatActivity() {
                     progressBar.progress = pct
                     tvProgressStatus.text = String.format(
                         Locale.US,
-                        "Encoding H.264 (%.2f Mbps • 1s Keyframes)... %d%%",
+                        "Rendering %s (%.2f Mbps)... %d%%",
+                        label,
                         targetMbps,
                         pct
                     )
@@ -701,16 +722,22 @@ class MainActivity : AppCompatActivity() {
         val outW = targetDims?.first ?: effW
         val outH = targetDims?.second ?: effH
         val resLabel = if (switchRotateVertical.isChecked) {
-            "${outW}x${outH} (90° Full-Screen Vertical)"
+            "${outW}x${outH} (90° Full-Screen)"
         } else if (targetDims == null) {
             "${outW}x${outH} (1:1 Native)"
         } else {
             "${outW}x${outH}"
         }
+        val winkBadge = if (switchWinkRestore.isChecked) {
+            if (switchWinkMax.isChecked) "✨ Wink MAX GPU Restored" else "✨ Wink Balanced Restored"
+        } else {
+            "Standard H.264"
+        }
 
         tvResultSpecs.text = String.format(
             Locale.US,
-            "Output: %s | Size: %.2f MB (Source: %.2f MB)\nClip: %s ➔ %s | Bitrate: %.2f Mbps (1s Keyframe)\nStatus: <11 MB WA PASSTHROUGH READY",
+            "Engine: %s\nOutput: %s | Size: %.2f MB (Source: %.2f MB)\nClip: %s ➔ %s | Bitrate: %.2f Mbps (<11 MB WA Bypass)",
+            winkBadge,
             resLabel,
             newSizeMb,
             oldSizeMb,
@@ -721,7 +748,7 @@ class MainActivity : AppCompatActivity() {
 
         videoPreview.setVideoPath(outFile.absolutePath)
         videoPreview.start()
-        Toast.makeText(this, "StatHD v1.2 Ready!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Wink GPU Ultra-HD Restoration Complete!", Toast.LENGTH_SHORT).show()
     }
 
     private fun onTranscodeError(error: ExportException) {
