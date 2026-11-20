@@ -35,7 +35,7 @@
                 android:background="@drawable/bg_badge_green"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
-                android:text="PURE STATUS ENGINE v1.2"
+                android:text="PURE STATUS ENGINE v1.2 BETA"
                 android:textColor="@color/emerald_light"
                 android:textSize="11sp"
                 android:textStyle="bold" />

@@ -1,4 +1,4 @@
-name: Build StatHD Android APK (Standalone)
+name: Build StatHD Android APK (Beta)
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Compile StatHD APK
+    name: Compile StatHD Beta APK
     runs-on: ubuntu-latest
 
     steps:
@@ -28,34 +28,37 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Build Signed Release APK
+      - name: Build Signed Beta APK
         run: gradle assembleRelease --no-daemon --stacktrace
 
-      - name: Prepare APK
+      - name: Prepare Beta APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.2.0.apk
-          ls -lh StatHD-v1.2.0.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.2.0-beta.apk
+          ls -lh StatHD-v1.2.0-beta.apk
 
-      - name: Upload APK Artifact
+      - name: Upload Beta APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: StatHD-WhatsApp-Status-HD-APK
-          path: StatHD-v1.2.0.apk
+          name: StatHD-WhatsApp-Status-HD-Beta-APK
+          path: StatHD-v1.2.0-beta.apk
           if-no-files-found: error
 
-      - name: Publish APK to GitHub Releases
+      - name: Publish Pre-Release Beta APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: stathd-v1.2.0
-          name: "StatHD v1.2.0 — 100% Lossless Stream Copy + Gamer 90° Full-Screen Mode"
+          tag_name: v1.2.0-beta
+          name: "StatHD v1.2.0-beta (Pre-Release Testing Build)"
           body: |
-            ### StatHD v1.2.0 (PureStatus Engine for Android)
-            - **100% Lossless Bit-for-Bit Stream Copy (`MediaExtractor` + `MediaMuxer`):** When your source video is already `<= 1280px` (e.g. `1280x576`), StatHD cuts 30s/45s clips with **ZERO re-encoding** (0% pixel loss — 100% identical graphic to the original video!).
-            - **1.0s Keyframe H.264 High-Clarity Encoding:** For 4K/1080p downscaling, locks a 1-second I-frame interval (`setiFrameIntervalSeconds(1.0f)`) so fast gaming teamfights recover sharpness immediately.
-            - **Gamer Full-Screen Mode (`Rotate 90° Vertical`):** Optional toggle to rotate landscape gameplay 90° (`576x1280` / `720x1280`) so it fills 100% of WhatsApp Status's vertical screen (2.5x more pixels than horizontal view!).
+            ### 🧪 StatHD v1.2.0-beta (Pre-Release Testing Build)
+            > **Note:** This is an active **Beta / Pre-Release** build for testing WhatsApp Status bypass quality before final stable release.
 
-            📲 **Direct APK Download for Android:**
-            Tap **`StatHD-v1.2.0.apk`** under **Assets** below to download and install directly on your Android device.
-          files: StatHD-v1.2.0.apk
+            #### What's Being Tested in v1.2.0-beta:
+            - **100% Lossless Bit-for-Bit Stream Copy (`MediaExtractor` + `MediaMuxer`):** Cuts 30s/45s clips with **ZERO re-encoding** when source video is `<= 1280px` (0% pixel loss from original).
+            - **1.0s Keyframe H.264 High-Clarity Encoding:** Locks a 1-second I-frame interval (`setiFrameIntervalSeconds(1.0f)`) for fast gaming motion recovery.
+            - **Gamer Full-Screen Mode (`Rotate 90° Vertical`):** Rotates landscape gameplay 90° (`576x1280` / `720x1280`) to fill 100% of WhatsApp Status's vertical display.
+
+            📲 **Direct Beta APK Download:**
+            Tap **`StatHD-v1.2.0-beta.apk`** under **Assets** below to install on your Android device.
+          files: StatHD-v1.2.0-beta.apk
           draft: false
-          prerelease: false
+          prerelease: true
