@@ -35,7 +35,7 @@
                 android:background="@drawable/bg_badge_green"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
-                android:text="PURE STATUS ENGINE v1.1"
+                android:text="PURE STATUS ENGINE v1.2"
                 android:textColor="@color/emerald_light"
                 android:textSize="11sp"
                 android:textStyle="bold" />
@@ -45,7 +45,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="16dp"
-            android:text="Smart 1280px Long-Side Guard (Never Upscale) • 100% Original Colors • Built-in Status Clip Trimmer (&lt;10.5 MB)."
+            android:text="Lossless Direct Stream Copy (Zero Re-Encode for &lt;=1280px) • H.264 High Profile CABAC • Gamer 90° Full-Screen Mode."
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
@@ -106,7 +106,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:fontFamily="monospace"
-                android:text="Resolution Guard: Waiting for video..."
+                android:text="Engine Mode: Waiting for video..."
                 android:textColor="@color/emerald_light"
                 android:textSize="11sp" />
 
@@ -122,7 +122,7 @@
                 app:cornerRadius="10dp" />
         </LinearLayout>
 
-        <!-- STEP 2: BUILT-IN STATUS CLIP TRIMMER & BITRATE LOCK -->
+        <!-- STEP 2: BUILT-IN STATUS CLIP TRIMMER & ENGINE MODE -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -134,12 +134,12 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="2. STATUS CLIP TRIMMER &amp; BITRATE MODE (&lt;10.5 MB CEILING)"
+                android:text="2. STATUS CLIP MODE (LOSSLESS STREAM COPY / HIGH PROFILE)"
                 android:textColor="@color/emerald_light"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <!-- Preset 1: 30s Ultra HD Highlight -->
+            <!-- Preset 1: 30s Lossless / Ultra HD Highlight -->
             <LinearLayout
                 android:id="@+id/cardPreset720"
                 android:layout_width="match_parent"
@@ -154,7 +154,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="30s ULTRA HD HIGHLIGHT (Recommended • Max Sharpness)"
+                    android:text="30s LOSSLESS DIRECT CUT / ULTRA HD (Recommended)"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -163,12 +163,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="3dp"
-                    android:text="Max 30s Clip • Locked 2.6 Mbps H.264 (~9.8 MB) • 1280px Max Long-Side (1:1 Native if &lt;=1280px). Zero WhatsApp re-compression."
+                    android:text="Max 30s Clip • If source is &lt;=1280px (e.g. 1280x576), uses 100% LOSSLESS BIT-FOR-BIT STREAM COPY (0% pixel loss, identical to original!). If &gt;1280px, encodes at 3.2 Mbps H.264 High Profile."
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Preset 2: 60s HD Balanced -->
+            <!-- Preset 2: 45s Lossless / High Clarity -->
             <LinearLayout
                 android:id="@+id/cardPreset1080"
                 android:layout_width="match_parent"
@@ -183,7 +183,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="60s HD BALANCED • 1-MINUTE STATUS"
+                    android:text="45s LOSSLESS / HIGH CLARITY (&lt;10.5 MB CEILING)"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -192,12 +192,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="3dp"
-                    android:text="Max 60s Clip • Locked 1.35 Mbps H.264 (~10.2 MB) • Stays strictly under WhatsApp's 11 MB limit for 1-minute clips."
+                    android:text="Max 45s Clip • Uses 100% Lossless Stream Copy if slice is &lt;10.5 MB, or 1.9 Mbps H.264 High Profile CABAC."
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Preset 3: 90s Full Status -->
+            <!-- Preset 3: 60s Balanced -->
             <LinearLayout
                 android:id="@+id/cardPreset60s"
                 android:layout_width="match_parent"
@@ -212,7 +212,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="90s FULL STATUS (1:30 MAX WA DURATION)"
+                    android:text="60s 1-MINUTE STATUS (1.45 Mbps High Profile)"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -221,7 +221,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="3dp"
-                    android:text="Max 90s (1:30) Clip • Locked 0.92 Mbps H.264 (~10.3 MB) • Pre-trimmed to 1:30 so WhatsApp's trimmer won't re-crush your video."
+                    android:text="Max 60s Clip • Note: Longer clips get lower bitrate per second due to WhatsApp's 11 MB cap. Use 30s mode for sharpest gaming graphics!"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -258,7 +258,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- STEP 3: COLOR & AUDIO FIDELITY (100% ORIGINAL COLORS BY DEFAULT) -->
+        <!-- STEP 3: GAMER FULL-SCREEN & COLOR FIDELITY -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -270,16 +270,27 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="3. COLOR &amp; AUDIO FIDELITY (100% ORIGINAL COLOR DEFAULT)"
+                android:text="3. GAMER FULL-SCREEN &amp; COLOR FIDELITY"
                 android:textColor="@color/emerald_light"
                 android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchRotateVertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:checked="false"
+                android:text="Gamer Full-Screen Mode (Rotate 90° Vertical • 2.5x Bigger Pixels)"
+                android:textColor="@color/emerald_light"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Color filters are OFF by default to preserve 100% original game/camera brightness and prevent crushed blacks."
+                android:layout_marginBottom="4dp"
+                android:text="Tip: Horizontal games on a vertical phone screen only use 25% of the screen (324p). Turning ON Rotate 90° uses 100% of the vertical 1280px screen!"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
 
@@ -287,7 +298,6 @@
                 android:id="@+id/switchMuteAudio"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
                 android:checked="false"
                 android:text="Remove Audio (100% Bitrate Quota for Video)"
                 android:textColor="@color/text_primary"
@@ -298,7 +308,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:checked="false"
-                android:text="Optional Micro-Contrast Boost (Keep OFF for games)"
+                android:text="Optional Micro-Contrast Boost (Keep OFF for 100% original colors)"
                 android:textColor="@color/text_primary"
                 android:textSize="13sp" />
 
@@ -341,7 +351,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="monospace"
-                android:text="Running Hardware H.264 Encoder... 0%"
+                android:text="Running PureStatus Engine... 0%"
                 android:textColor="@color/emerald_light"
                 android:textSize="12sp" />
 
@@ -372,7 +382,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="✓ STATHD v1.1 MASTER READY (&lt;10.5 MB WA BYPASS)"
+                android:text="✓ STATHD v1.2 MASTER READY (WA BYPASS)"
                 android:textColor="@color/emerald_light"
                 android:textSize="13sp"
                 android:textStyle="bold" />

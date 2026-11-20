@@ -33,29 +33,29 @@ jobs:
 
       - name: Prepare APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.1.0.apk
-          ls -lh StatHD-v1.1.0.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.2.0.apk
+          ls -lh StatHD-v1.2.0.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-APK
-          path: StatHD-v1.1.0.apk
+          path: StatHD-v1.2.0.apk
           if-no-files-found: error
 
       - name: Publish APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: stathd-v1.1.0
-          name: "StatHD v1.1.0 — Smart 1280px Guard, 100% Original Colors & Clip Trimmer"
+          tag_name: stathd-v1.2.0
+          name: "StatHD v1.2.0 — 100% Lossless Stream Copy + Gamer 90° Full-Screen Mode"
           body: |
-            ### StatHD v1.1.0 (PureStatus Engine for Android)
-            - **Smart Resolution Guard (`Never Upscale` + `Max Long-Side 1280px`):** Preserves 1:1 native pixels when input is `<= 1280px` (e.g. `1280x576` stays `1280x576` with zero double-scaling blur).
-            - **100% Original Colors by Default:** Disables forced HDR tone-mapping and contrast crushing by default so SDR games (Mobile Legends, PUBG) retain 100% original brightness and color accuracy.
-            - **Built-in Status Clip Trimmer (`30s Ultra HD` / `60s HD` / `90s Full`):** Pre-trims highlight segments and locks output file size strictly `< 10.5 MB` so WhatsApp Status never re-compresses your video.
+            ### StatHD v1.2.0 (PureStatus Engine for Android)
+            - **100% Lossless Bit-for-Bit Stream Copy (`MediaExtractor` + `MediaMuxer`):** When your source video is already `<= 1280px` (e.g. `1280x576`), StatHD cuts 30s/45s clips with **ZERO re-encoding** (0% pixel loss — 100% identical graphic to the original video!).
+            - **1.0s Keyframe H.264 High-Clarity Encoding:** For 4K/1080p downscaling, locks a 1-second I-frame interval (`setiFrameIntervalSeconds(1.0f)`) so fast gaming teamfights recover sharpness immediately.
+            - **Gamer Full-Screen Mode (`Rotate 90° Vertical`):** Optional toggle to rotate landscape gameplay 90° (`576x1280` / `720x1280`) so it fills 100% of WhatsApp Status's vertical screen (2.5x more pixels than horizontal view!).
 
             📲 **Direct APK Download for Android:**
-            Tap **`StatHD-v1.1.0.apk`** under **Assets** below to download and install directly on your Android device.
-          files: StatHD-v1.1.0.apk
+            Tap **`StatHD-v1.2.0.apk`** under **Assets** below to download and install directly on your Android device.
+          files: StatHD-v1.2.0.apk
           draft: false
           prerelease: false
