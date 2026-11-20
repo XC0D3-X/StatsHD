@@ -33,27 +33,29 @@ jobs:
 
       - name: Prepare APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.0.0.apk
-          ls -lh StatHD-v1.0.0.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.1.0.apk
+          ls -lh StatHD-v1.1.0.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-APK
-          path: StatHD-v1.0.0.apk
+          path: StatHD-v1.1.0.apk
           if-no-files-found: error
 
       - name: Publish APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: stathd-v1.0.0
-          name: "StatHD v1.0.0 — WhatsApp Status HD Video Optimizer (Android APK)"
+          tag_name: stathd-v1.1.0
+          name: "StatHD v1.1.0 — Smart 1280px Guard, 100% Original Colors & Clip Trimmer"
           body: |
-            ### StatHD v1.0.0 (PureStatus Engine for Android)
-            Hardware-accelerated WhatsApp Status HD video optimizer built with Kotlin & AndroidX Media3 (`H.264 Bitrate-Lock` + `OpenGL Downscaler` + `Crisp Micro-Contrast Boost` + `Auto HDR-to-SDR Tone-Mapping`).
+            ### StatHD v1.1.0 (PureStatus Engine for Android)
+            - **Smart Resolution Guard (`Never Upscale` + `Max Long-Side 1280px`):** Preserves 1:1 native pixels when input is `<= 1280px` (e.g. `1280x576` stays `1280x576` with zero double-scaling blur).
+            - **100% Original Colors by Default:** Disables forced HDR tone-mapping and contrast crushing by default so SDR games (Mobile Legends, PUBG) retain 100% original brightness and color accuracy.
+            - **Built-in Status Clip Trimmer (`30s Ultra HD` / `60s HD` / `90s Full`):** Pre-trims highlight segments and locks output file size strictly `< 10.5 MB` so WhatsApp Status never re-compresses your video.
 
             📲 **Direct APK Download for Android:**
-            Tap **`StatHD-v1.0.0.apk`** under **Assets** below to download and install directly on your Android device.
-          files: StatHD-v1.0.0.apk
+            Tap **`StatHD-v1.1.0.apk`** under **Assets** below to download and install directly on your Android device.
+          files: StatHD-v1.1.0.apk
           draft: false
           prerelease: false

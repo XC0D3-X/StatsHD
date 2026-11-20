@@ -35,7 +35,7 @@
                 android:background="@drawable/bg_badge_green"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
-                android:text="PURE STATUS ENGINE"
+                android:text="PURE STATUS ENGINE v1.1"
                 android:textColor="@color/emerald_light"
                 android:textSize="11sp"
                 android:textStyle="bold" />
@@ -45,7 +45,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="16dp"
-            android:text="Bypass aggressive WhatsApp Status compression • Hardware H.264 bitrate lock &amp; precision pixel scaling."
+            android:text="Smart 1280px Long-Side Guard (Never Upscale) • 100% Original Colors • Built-in Status Clip Trimmer (&lt;10.5 MB)."
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
@@ -100,6 +100,16 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
+            <TextView
+                android:id="@+id/tvResolutionGuardInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="monospace"
+                android:text="Resolution Guard: Waiting for video..."
+                android:textColor="@color/emerald_light"
+                android:textSize="11sp" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPickVideo"
                 android:layout_width="match_parent"
@@ -112,7 +122,7 @@
                 app:cornerRadius="10dp" />
         </LinearLayout>
 
-        <!-- STEP 2: WHATSAPP STATUS HD PRESETS -->
+        <!-- STEP 2: BUILT-IN STATUS CLIP TRIMMER & BITRATE LOCK -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -124,12 +134,12 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="2. WHATSAPP STATUS OPTIMIZATION PRESET"
+                android:text="2. STATUS CLIP TRIMMER &amp; BITRATE MODE (&lt;10.5 MB CEILING)"
                 android:textColor="@color/emerald_light"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <!-- Preset 1: Pure 720p HD -->
+            <!-- Preset 1: 30s Ultra HD Highlight -->
             <LinearLayout
                 android:id="@+id/cardPreset720"
                 android:layout_width="match_parent"
@@ -144,7 +154,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="PURE 720p HD • SWEET SPOT (Recommended)"
+                    android:text="30s ULTRA HD HIGHLIGHT (Recommended • Max Sharpness)"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -153,12 +163,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="3dp"
-                    android:text="720x1280 • Locked 2.2 Mbps H.264 • ~5MB/20s. Bypasses WhatsApp re-compression with maximum sharpness."
+                    android:text="Max 30s Clip • Locked 2.6 Mbps H.264 (~9.8 MB) • 1280px Max Long-Side (1:1 Native if &lt;=1280px). Zero WhatsApp re-compression."
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Preset 2: Ultra 1080p FHD -->
+            <!-- Preset 2: 60s HD Balanced -->
             <LinearLayout
                 android:id="@+id/cardPreset1080"
                 android:layout_width="match_parent"
@@ -173,7 +183,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="ULTRA 1080p FHD • MAX CLARITY"
+                    android:text="60s HD BALANCED • 1-MINUTE STATUS"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -182,12 +192,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="3dp"
-                    android:text="1080x1920 • Locked 3.2 Mbps H.264 • Ideal for shorter clips (15-30s) with fine text and details."
+                    android:text="Max 60s Clip • Locked 1.35 Mbps H.264 (~10.2 MB) • Stays strictly under WhatsApp's 11 MB limit for 1-minute clips."
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Preset 3: Long Status 60s -->
+            <!-- Preset 3: 90s Full Status -->
             <LinearLayout
                 android:id="@+id/cardPreset60s"
                 android:layout_width="match_parent"
@@ -202,7 +212,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="LONG STATUS 60s • SIZE SAVER (&lt;12MB)"
+                    android:text="90s FULL STATUS (1:30 MAX WA DURATION)"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -211,13 +221,44 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="3dp"
-                    android:text="720x1280 • Locked 1.5 Mbps H.264 • Keeps full 60-second status videos under ~11MB to avoid macroblocking."
+                    android:text="Max 90s (1:30) Clip • Locked 0.92 Mbps H.264 (~10.3 MB) • Pre-trimmed to 1:30 so WhatsApp's trimmer won't re-crush your video."
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
+
+            <!-- Highlight Start Time Trimmer Slider -->
+            <LinearLayout
+                android:id="@+id/layoutTrimSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="#0B0F17"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/tvTrimWindow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="Clip Window: 0:00 ➔ 0:30 (Slide to pick highlight moment)"
+                    android:textColor="@color/emerald_light"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <SeekBar
+                    android:id="@+id/seekBarTrimStart"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressTint="@color/emerald_primary"
+                    android:thumbTint="@color/emerald_light" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- STEP 3: VISUAL & AUDIO TUNING -->
+        <!-- STEP 3: COLOR & AUDIO FIDELITY (100% ORIGINAL COLORS BY DEFAULT) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -229,18 +270,35 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="3. PURE STATUS ENGINE TUNING"
+                android:text="3. COLOR &amp; AUDIO FIDELITY (100% ORIGINAL COLOR DEFAULT)"
                 android:textColor="@color/emerald_light"
                 android:textSize="12sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Color filters are OFF by default to preserve 100% original game/camera brightness and prevent crushed blacks."
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchMuteAudio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:checked="false"
+                android:text="Remove Audio (100% Bitrate Quota for Video)"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/switchCrispBoost"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:checked="true"
-                android:text="Crisp Micro-Contrast Boost (Edge Sharpening)"
+                android:checked="false"
+                android:text="Optional Micro-Contrast Boost (Keep OFF for games)"
                 android:textColor="@color/text_primary"
                 android:textSize="13sp" />
 
@@ -248,17 +306,8 @@
                 android:id="@+id/switchHdrToneMap"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="Auto HDR-to-SDR Tone-Map (Fix Washed-Out Colors)"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchMuteAudio"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
                 android:checked="false"
-                android:text="Remove Audio (100% Bitrate Quota for Video)"
+                android:text="Force HDR-to-SDR Tone-Map (Only for 10-bit HDR clips)"
                 android:textColor="@color/text_primary"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -323,7 +372,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="✓ STATHD MASTER READY (WA COMPRESSION BYPASSED)"
+                android:text="✓ STATHD v1.1 MASTER READY (&lt;10.5 MB WA BYPASS)"
                 android:textColor="@color/emerald_light"
                 android:textSize="13sp"
                 android:textStyle="bold" />

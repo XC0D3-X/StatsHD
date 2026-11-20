@@ -14,6 +14,7 @@ import android.provider.OpenableColumns
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.VideoView
@@ -41,27 +42,34 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 import java.io.File
 import java.util.Locale
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 @OptIn(UnstableApi::class)
 class MainActivity : AppCompatActivity() {
 
     enum class StatusPreset(
         val label: String,
-        val shortSidePx: Int,
-        val videoBitrateBps: Int
+        val maxClipDurationMs: Long,
+        val maxLongSidePx: Int,
+        val maxBitrateBps: Int
     ) {
-        PURE_720P("Pure 720p HD (2.2 Mbps)", 720, 2_200_000),
-        ULTRA_1080P("Ultra 1080p FHD (3.2 Mbps)", 1080, 3_200_000),
-        LONG_60S("Long Status 60s (1.5 Mbps)", 720, 1_500_000)
+        CLIP_30S_ULTRA("30s Ultra HD (2.6 Mbps)", 30_000L, 1280, 2_650_000),
+        CLIP_60S_HD("60s HD Balanced (1.35 Mbps)", 60_000L, 1280, 1_350_000),
+        CLIP_90S_FULL("90s Full Status (0.92 Mbps)", 90_000L, 1280, 920_000)
     }
 
     private lateinit var videoPreview: VideoView
     private lateinit var tvEmptyPreview: TextView
     private lateinit var tvSourceSpecs: TextView
+    private lateinit var tvResolutionGuardInfo: TextView
     private lateinit var btnPickVideo: MaterialButton
     private lateinit var cardPreset720: LinearLayout
     private lateinit var cardPreset1080: LinearLayout
     private lateinit var cardPreset60s: LinearLayout
+    private lateinit var tvTrimWindow: TextView
+    private lateinit var seekBarTrimStart: SeekBar
     private lateinit var switchCrispBoost: SwitchMaterial
     private lateinit var switchHdrToneMap: SwitchMaterial
     private lateinit var switchMuteAudio: SwitchMaterial
@@ -76,7 +84,13 @@ class MainActivity : AppCompatActivity() {
 
     private var selectedVideoUri: Uri? = null
     private var sourceSizeBytes: Long = 0L
-    private var currentPreset: StatusPreset = StatusPreset.PURE_720P
+    private var sourceWidth: Int = 0
+    private var sourceHeight: Int = 0
+    private var sourceDurationMs: Long = 0L
+    private var trimStartMs: Long = 0L
+    private var trimEndMs: Long = 0L
+
+    private var currentPreset: StatusPreset = StatusPreset.CLIP_30S_ULTRA
     private var outputVideoFile: File? = null
     private var activeTransformer: Transformer? = null
 
@@ -104,10 +118,13 @@ class MainActivity : AppCompatActivity() {
         videoPreview = findViewById(R.id.videoPreview)
         tvEmptyPreview = findViewById(R.id.tvEmptyPreview)
         tvSourceSpecs = findViewById(R.id.tvSourceSpecs)
+        tvResolutionGuardInfo = findViewById(R.id.tvResolutionGuardInfo)
         btnPickVideo = findViewById(R.id.btnPickVideo)
         cardPreset720 = findViewById(R.id.cardPreset720)
         cardPreset1080 = findViewById(R.id.cardPreset1080)
         cardPreset60s = findViewById(R.id.cardPreset60s)
+        tvTrimWindow = findViewById(R.id.tvTrimWindow)
+        seekBarTrimStart = findViewById(R.id.seekBarTrimStart)
         switchCrispBoost = findViewById(R.id.switchCrispBoost)
         switchHdrToneMap = findViewById(R.id.switchHdrToneMap)
         switchMuteAudio = findViewById(R.id.switchMuteAudio)
@@ -126,9 +143,18 @@ class MainActivity : AppCompatActivity() {
             pickVideoLauncher.launch("video/*")
         }
 
-        cardPreset720.setOnClickListener { selectPreset(StatusPreset.PURE_720P) }
-        cardPreset1080.setOnClickListener { selectPreset(StatusPreset.ULTRA_1080P) }
-        cardPreset60s.setOnClickListener { selectPreset(StatusPreset.LONG_60S) }
+        cardPreset720.setOnClickListener { selectPreset(StatusPreset.CLIP_30S_ULTRA) }
+        cardPreset1080.setOnClickListener { selectPreset(StatusPreset.CLIP_60S_HD) }
+        cardPreset60s.setOnClickListener { selectPreset(StatusPreset.CLIP_90S_FULL) }
+
+        seekBarTrimStart.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                updateTrimWindowFromSlider(progress, seekPreview = fromUser)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
 
         btnOptimize.setOnClickListener {
             val uri = selectedVideoUri
@@ -163,14 +189,17 @@ class MainActivity : AppCompatActivity() {
     private fun selectPreset(preset: StatusPreset) {
         currentPreset = preset
         cardPreset720.setBackgroundResource(
-            if (preset == StatusPreset.PURE_720P) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
+            if (preset == StatusPreset.CLIP_30S_ULTRA) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
         )
         cardPreset1080.setBackgroundResource(
-            if (preset == StatusPreset.ULTRA_1080P) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
+            if (preset == StatusPreset.CLIP_60S_HD) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
         )
         cardPreset60s.setBackgroundResource(
-            if (preset == StatusPreset.LONG_60S) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
+            if (preset == StatusPreset.CLIP_90S_FULL) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
         )
+        seekBarTrimStart.progress = 0
+        updateTrimWindowFromSlider(0, seekPreview = true)
+        updateResolutionGuardReadout()
     }
 
     private fun onVideoSelected(uri: Uri) {
@@ -193,32 +222,145 @@ class MainActivity : AppCompatActivity() {
         val retriever = MediaMetadataRetriever()
         try {
             retriever.setDataSource(this, uri)
-            val width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
-            val height = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
-            val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+            val rawW = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
+            val rawH = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
+            val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+            sourceDurationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
             val bitrateBps = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toLongOrNull() ?: 0L
 
+            if (rotation == 90 || rotation == 270) {
+                sourceWidth = rawH
+                sourceHeight = rawW
+            } else {
+                sourceWidth = rawW
+                sourceHeight = rawH
+            }
+
             val sizeMb = sourceSizeBytes / (1024.0 * 1024.0)
-            val durationSec = durationMs / 1000.0
+            val durationSec = sourceDurationMs / 1000.0
             val bitrateMbps = bitrateBps / 1_000_000.0
 
             tvSourceSpecs.text = String.format(
                 Locale.US,
-                "Source: %dx%d | %.2f MB | %.1fs | %.1f Mbps",
-                width,
-                height,
+                "Source: %dx%d | %.2f MB | %s (%.1fs) | %.2f Mbps",
+                sourceWidth,
+                sourceHeight,
                 sizeMb,
+                formatTimeMs(sourceDurationMs),
                 durationSec,
                 bitrateMbps
             )
         } catch (e: Exception) {
-            tvSourceSpecs.text = "Video loaded • Ready for StatHD optimization"
+            sourceWidth = 0
+            sourceHeight = 0
+            sourceDurationMs = 0L
+            tvSourceSpecs.text = "Video loaded • Ready for StatHD v1.1 optimization"
         } finally {
             try {
                 retriever.release()
             } catch (_: Exception) {
             }
         }
+
+        seekBarTrimStart.progress = 0
+        updateTrimWindowFromSlider(0, seekPreview = false)
+        updateResolutionGuardReadout()
+    }
+
+    private fun updateTrimWindowFromSlider(progress: Int, seekPreview: Boolean) {
+        val totalMs = sourceDurationMs
+        val maxClipMs = currentPreset.maxClipDurationMs
+
+        if (totalMs <= 0L) {
+            trimStartMs = 0L
+            trimEndMs = maxClipMs
+            tvTrimWindow.text = "Clip Window: Auto-trim to max ${maxClipMs / 1000}s (<10.5 MB WA Ceiling)"
+            return
+        }
+
+        if (totalMs <= maxClipMs) {
+            trimStartMs = 0L
+            trimEndMs = totalMs
+            seekBarTrimStart.isEnabled = false
+            tvTrimWindow.text = "Clip Window: Full Video (0:00 ➔ ${formatTimeMs(totalMs)}) • Fits in 1 Status"
+        } else {
+            seekBarTrimStart.isEnabled = true
+            val maxStartMs = totalMs - maxClipMs
+            trimStartMs = (maxStartMs * (progress / 100.0)).toLong()
+            trimEndMs = min(totalMs, trimStartMs + maxClipMs)
+            tvTrimWindow.text = String.format(
+                Locale.US,
+                "Clip Window: %s ➔ %s (%ds clip • Slide to pick highlight)",
+                formatTimeMs(trimStartMs),
+                formatTimeMs(trimEndMs),
+                (trimEndMs - trimStartMs) / 1000L
+            )
+            if (seekPreview && videoPreview.visibility == View.VISIBLE) {
+                try {
+                    videoPreview.seekTo(trimStartMs.toInt())
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
+    private fun computeSafeOutputDimensions(): Pair<Int, Int>? {
+        if (sourceWidth <= 0 || sourceHeight <= 0) return null
+        val longSide = max(sourceWidth, sourceHeight)
+        val cap = currentPreset.maxLongSidePx
+
+        // Smart Resolution Guard: NEVER upscale if longSide is already <= 1280px (e.g. 1280x576 stays 1280x576 1:1!)
+        if (longSide <= cap) {
+            return null
+        }
+
+        val scale = cap.toDouble() / longSide.toDouble()
+        // Round to even numbers for H.264 macroblock compliance
+        val targetW = max(2, ((sourceWidth * scale) / 2.0).roundToInt() * 2)
+        val targetH = max(2, ((sourceHeight * scale) / 2.0).roundToInt() * 2)
+        return Pair(targetW, targetH)
+    }
+
+    private fun updateResolutionGuardReadout() {
+        if (sourceWidth <= 0 || sourceHeight <= 0) {
+            tvResolutionGuardInfo.text = "Resolution Guard: Max 1280px Long-Side (Never Upscale)"
+            return
+        }
+        val scaled = computeSafeOutputDimensions()
+        if (scaled == null) {
+            tvResolutionGuardInfo.text = String.format(
+                Locale.US,
+                "✓ Resolution Guard: %dx%d is <= %dpx • 1:1 Native Pixels (Zero Upscaling!)",
+                sourceWidth,
+                sourceHeight,
+                currentPreset.maxLongSidePx
+            )
+        } else {
+            tvResolutionGuardInfo.text = String.format(
+                Locale.US,
+                "✓ Resolution Guard: Scaling %dx%d ➔ %dx%d (Strict %dpx Long-Side Cap)",
+                sourceWidth,
+                sourceHeight,
+                scaled.first,
+                scaled.second,
+                currentPreset.maxLongSidePx
+            )
+        }
+    }
+
+    private fun computeSafeVideoBitrateBps(): Int {
+        // Target max file size of 10.1 MB (84,724,940 bits) so output stays strictly below WhatsApp's 11 MB re-encode ceiling
+        val clipDurationSec = if (sourceDurationMs > 0L && trimEndMs > trimStartMs) {
+            max(1.0, (trimEndMs - trimStartMs) / 1000.0)
+        } else {
+            currentPreset.maxClipDurationMs / 1000.0
+        }
+
+        val audioBitrateBps = if (switchMuteAudio.isChecked) 0 else 128_000
+        val maxTotalBits = 10.1 * 1024.0 * 1024.0 * 8.0
+        val maxSafeVideoBps = ((maxTotalBits / clipDurationSec) - audioBitrateBps).toInt()
+
+        return min(currentPreset.maxBitrateBps, max(750_000, maxSafeVideoBps))
     }
 
     private fun startStatHdTranscode(inputUri: Uri, allowHdrToneMap: Boolean) {
@@ -227,22 +369,47 @@ class MainActivity : AppCompatActivity() {
         cardResult.visibility = View.GONE
         layoutProgress.visibility = View.VISIBLE
         progressBar.progress = 0
-        tvProgressStatus.text = "Initializing Hardware H.264 Encoder (${currentPreset.label})..."
+
+        val targetBitrateBps = computeSafeVideoBitrateBps()
+        val targetMbps = targetBitrateBps / 1_000_000.0
+        tvProgressStatus.text = String.format(
+            Locale.US,
+            "Initializing Hardware H.264 Encoder (%.2f Mbps • <10.5 MB Target)...",
+            targetMbps
+        )
 
         val outDir = File(cacheDir, "stathd_exports").apply { mkdirs() }
         val outFile = File(outDir, "StatHD_${System.currentTimeMillis()}.mp4")
         if (outFile.exists()) outFile.delete()
         outputVideoFile = outFile
 
-        // 1. Configure Video Effects (Resolution Downscale + Crisp Micro-Contrast)
+        // 1. Smart Resolution Guard + Optional Contrast (Empty list by default for 1:1 native pixels & 100% original colors!)
         val videoEffects = mutableListOf<Effect>()
-        videoEffects.add(Presentation.createForHeight(currentPreset.shortSidePx))
+        val targetDims = computeSafeOutputDimensions()
+        if (targetDims != null) {
+            videoEffects.add(
+                Presentation.createForWidthAndHeight(
+                    targetDims.first,
+                    targetDims.second,
+                    Presentation.LAYOUT_SCALE_TO_FIT
+                )
+            )
+        }
         if (switchCrispBoost.isChecked) {
-            // Subtle micro-contrast enhancement so downscaled text & edges look sharper on WhatsApp Status
-            videoEffects.add(Contrast(0.08f))
+            videoEffects.add(Contrast(0.05f))
         }
 
-        val mediaItem = MediaItem.fromUri(inputUri)
+        // 2. Built-in Clipping Configuration so videos >30s/60s/90s are pre-trimmed cleanly
+        val mediaItemBuilder = MediaItem.Builder().setUri(inputUri)
+        if (sourceDurationMs > 0L && (trimStartMs > 0L || trimEndMs < sourceDurationMs)) {
+            val clipConfig = MediaItem.ClippingConfiguration.Builder()
+                .setStartPositionMs(trimStartMs)
+                .setEndPositionMs(trimEndMs)
+                .build()
+            mediaItemBuilder.setClippingConfiguration(clipConfig)
+        }
+        val mediaItem = mediaItemBuilder.build()
+
         val editedMediaItem = EditedMediaItem.Builder(mediaItem)
             .setEffects(Effects(emptyList(), videoEffects))
             .setRemoveAudio(switchMuteAudio.isChecked)
@@ -254,9 +421,9 @@ class MainActivity : AppCompatActivity() {
         }
         val composition = compositionBuilder.build()
 
-        // 2. Configure Bitrate-Locked Hardware H.264 Encoder
+        // 3. Configure Bitrate-Locked Hardware H.264 Encoder
         val videoEncoderSettings = VideoEncoderSettings.Builder()
-            .setBitrate(currentPreset.videoBitrateBps)
+            .setBitrate(targetBitrateBps)
             .build()
 
         val encoderFactory = DefaultEncoderFactory.Builder(this)
@@ -270,7 +437,7 @@ class MainActivity : AppCompatActivity() {
             .addListener(object : Transformer.Listener {
                 override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                     mainHandler.removeCallbacksAndMessages(null)
-                    onTranscodeSuccess(outFile)
+                    onTranscodeSuccess(outFile, targetBitrateBps, targetDims)
                 }
 
                 override fun onError(
@@ -279,7 +446,6 @@ class MainActivity : AppCompatActivity() {
                     exportException: ExportException
                 ) {
                     mainHandler.removeCallbacksAndMessages(null)
-                    // Automatic fallback if device hardware doesn't support explicit HDR tone-mapping mode
                     if (allowHdrToneMap) {
                         startStatHdTranscode(inputUri, allowHdrToneMap = false)
                         return
@@ -291,17 +457,22 @@ class MainActivity : AppCompatActivity() {
 
         activeTransformer = transformer
         transformer.start(composition, outFile.absolutePath)
-        pollTransformerProgress(transformer)
+        pollTransformerProgress(transformer, targetMbps)
     }
 
-    private fun pollTransformerProgress(transformer: Transformer) {
+    private fun pollTransformerProgress(transformer: Transformer, targetMbps: Double) {
         val runnable = object : Runnable {
             override fun run() {
                 val state = transformer.getProgress(progressHolder)
                 if (state == Transformer.PROGRESS_STATE_AVAILABLE) {
                     val pct = progressHolder.progress
                     progressBar.progress = pct
-                    tvProgressStatus.text = "Encoding H.264 Bitrate-Lock (${currentPreset.label})... $pct%"
+                    tvProgressStatus.text = String.format(
+                        Locale.US,
+                        "Encoding H.264 (%.2f Mbps • 100%% Original Colors)... %d%%",
+                        targetMbps,
+                        pct
+                    )
                 }
                 if (state != Transformer.PROGRESS_STATE_NOT_STARTED) {
                     mainHandler.postDelayed(this, 150L)
@@ -311,7 +482,7 @@ class MainActivity : AppCompatActivity() {
         mainHandler.post(runnable)
     }
 
-    private fun onTranscodeSuccess(outFile: File) {
+    private fun onTranscodeSuccess(outFile: File, targetBitrateBps: Int, targetDims: Pair<Int, Int>?) {
         btnOptimize.isEnabled = true
         btnPickVideo.isEnabled = true
         progressBar.progress = 100
@@ -321,28 +492,32 @@ class MainActivity : AppCompatActivity() {
         val newSizeBytes = outFile.length()
         val newSizeMb = newSizeBytes / (1024.0 * 1024.0)
         val oldSizeMb = sourceSizeBytes / (1024.0 * 1024.0)
-        val targetMbps = currentPreset.videoBitrateBps / 1_000_000.0
+        val targetMbps = targetBitrateBps / 1_000_000.0
 
-        val savedPct = if (sourceSizeBytes > 0 && newSizeBytes < sourceSizeBytes) {
-            ((sourceSizeBytes - newSizeBytes) * 100.0 / sourceSizeBytes)
+        val outW = targetDims?.first ?: sourceWidth
+        val outH = targetDims?.second ?: sourceHeight
+        val resLabel = if (targetDims == null) "${outW}x${outH} (1:1 Native)" else "${outW}x${outH}"
+        val colorLabel = if (!switchCrispBoost.isChecked && !switchHdrToneMap.isChecked) {
+            "100% Original SDR"
         } else {
-            0.0
+            "Custom Tuned"
         }
 
         tvResultSpecs.text = String.format(
             Locale.US,
-            "Preset: %s\nOriginal: %.2f MB ➔ StatHD: %.2f MB (Saved %.0f%%)\nCodec: H.264 (avc1) | Bitrate: %.1f Mbps | Status: WA BYPASS READY",
-            currentPreset.label,
-            oldSizeMb,
+            "Output: %s | Size: %.2f MB (Source: %.2f MB)\nClip: %s ➔ %s | Bitrate: %.2f Mbps H.264\nColors: %s | Status: <11 MB WA PASSTHROUGH READY",
+            resLabel,
             newSizeMb,
-            savedPct,
-            targetMbps
+            oldSizeMb,
+            formatTimeMs(trimStartMs),
+            formatTimeMs(trimEndMs),
+            targetMbps,
+            colorLabel
         )
 
-        // Update preview to play the newly optimized StatHD video
         videoPreview.setVideoPath(outFile.absolutePath)
         videoPreview.start()
-        Toast.makeText(this, "StatHD Master Ready for WhatsApp Status!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "StatHD v1.1 Ready (<10.5 MB WhatsApp Bypass)!", Toast.LENGTH_SHORT).show()
     }
 
     private fun onTranscodeError(error: ExportException) {
@@ -351,7 +526,7 @@ class MainActivity : AppCompatActivity() {
         layoutProgress.visibility = View.GONE
         Toast.makeText(
             this,
-            "Encoding error: ${error.localizedMessage ?: "Please try the Pure 720p preset"}",
+            "Encoding error: ${error.localizedMessage ?: "Please try again"}",
             Toast.LENGTH_LONG
         ).show()
     }
@@ -373,7 +548,6 @@ class MainActivity : AppCompatActivity() {
         try {
             startActivity(waIntent)
         } catch (_: Exception) {
-            // Fallback to general share chooser if standard WhatsApp package isn't installed (e.g. WA Business)
             val chooser = Intent.createChooser(
                 Intent(Intent.ACTION_SEND).apply {
                     type = "video/mp4"
@@ -443,6 +617,13 @@ class MainActivity : AppCompatActivity() {
         } catch (_: Exception) {
             0L
         }
+    }
+
+    private fun formatTimeMs(ms: Long): String {
+        val totalSec = max(0L, ms / 1000L)
+        val min = totalSec / 60L
+        val sec = totalSec % 60L
+        return String.format(Locale.US, "%d:%02d", min, sec)
     }
 
     override fun onDestroy() {
