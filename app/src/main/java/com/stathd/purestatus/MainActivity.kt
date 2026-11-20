@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         val maxLongSidePx: Int,
         val maxBitrateBps: Int
     ) {
-        CLIP_30S_ULTRA("30s Wink Ultra HD (2.65 Mbps)", 30_000L, 1280, 2_650_000),
+        CLIP_30S_ULTRA("30s Wink Ultra HD (3.2 Mbps)", 30_000L, 1280, 3_200_000),
         CLIP_45S_HD("45s Wink High Clarity (1.80 Mbps)", 45_000L, 1280, 1_800_000),
         CLIP_60S_FULL("60s 1-Minute Status (1.38 Mbps)", 60_000L, 1280, 1_380_000)
     }
@@ -596,22 +596,22 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // Add Wink GPU Ultra-HD Restoration Shader (Bilateral De-Block + CAS Edge Sharpening + Vibrance)
+        // Add Wink GPU Ultra-HD Restoration Shader (Dual-Radius 3x3 Fine + 7x7 Wide Clarity Unsharp)
         if (winkActive) {
             if (switchWinkMax.isChecked) {
                 videoEffects.add(
                     WinkUltraHdEffect(
-                        sharpnessStrength = 0.92f,
-                        denoiseStrength = 0.52f,
-                        vibranceBoost = 0.11f
+                        sharpnessStrength = 1.05f,
+                        denoiseStrength = 0.0f,
+                        vibranceBoost = 0.12f
                     )
                 )
             } else {
                 videoEffects.add(
                     WinkUltraHdEffect(
-                        sharpnessStrength = 0.65f,
-                        denoiseStrength = 0.38f,
-                        vibranceBoost = 0.06f
+                        sharpnessStrength = 0.72f,
+                        denoiseStrength = 0.0f,
+                        vibranceBoost = 0.08f
                     )
                 )
             }

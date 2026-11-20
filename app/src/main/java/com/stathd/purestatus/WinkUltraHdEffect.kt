@@ -13,27 +13,28 @@ import androidx.media3.effect.GlEffect
 import androidx.media3.effect.GlShaderProgram
 
 /**
- * WinkUltraHdEffect — Real-Time GPU Video Quality Restoration Shader
+ * WinkUltraHdEffect v1.4 — Dual-Radius Multi-Scale Unsharp + Local 3D Clarity GPU Shader
  *
- * Implements a 3-stage pixel restoration pipeline inspired by Wink (Meitu) Ultra-HD:
- * 1. Edge-Preserving Bilateral De-Blocking & Mosquito Noise Removal (smooths flat compression blocks
- *    on grass/sky/skin without softening borders).
- * 2. Contrast-Adaptive Sharpening (AMD FidelityFX CAS-inspired) with Anti-Halo Neighborhood Clamping
- *    to reconstruct crisp text, hero HP bars, outlines, and fine details.
- * 3. Shadow-Safe Vibrance & Midtone Clarity Pop (enhances color separation without crushing blacks).
+ * Calibrated directly on zoomed portrait gameplay (1220x2168 -> 720x1280) to survive
+ * WhatsApp Status's internal H.264 DCT quantization:
+ * 1. Fine 3x3 Kernel (1.0px radius, amount 1.65x): Reconstructs crisp text ("CvN Syamir 969",
+ *    damage/HP numbers, HP bar tick lines, and fine UI edges).
+ * 2. Wide 7x7 Clarity Kernel (2.5px radius, amount 1.15x): Reconstructs zoomed-in game textures,
+ *    hero armor, bush leaves, and skill rings (Dehaze / 3D Clarity Pop).
+ * 3. Micro-Contrast (1.06x) + Vibrance/Saturation (1.12x): Restores vivid HD pop without crushing blacks.
  */
 @OptIn(UnstableApi::class)
 class WinkUltraHdEffect(
-    private val sharpnessStrength: Float = 0.78f,
-    private val denoiseStrength: Float = 0.45f,
-    private val vibranceBoost: Float = 0.10f
+    private val sharpnessStrength: Float = 1.0f,
+    private val denoiseStrength: Float = 0.0f,
+    private val vibranceBoost: Float = 0.12f
 ) : GlEffect {
 
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram {
         return WinkUltraHdShaderProgram(
             useHdr = useHdr,
             sharpness = sharpnessStrength,
-            denoise = denoiseStrength,
+            clarity = if (sharpnessStrength >= 0.85f) 1.15f else 0.75f,
             vibrance = vibranceBoost
         )
     }
@@ -43,13 +44,13 @@ class WinkUltraHdEffect(
 private class WinkUltraHdShaderProgram(
     useHdr: Boolean,
     private val sharpness: Float,
-    private val denoise: Float,
+    private val clarity: Float,
     private val vibrance: Float
 ) : BaseGlShaderProgram(useHdr, /* texturePoolCapacity= */ 1) {
 
     private val glProgram: GlProgram
-    private var texelWidth: Float = 1.0f / 1280.0f
-    private var texelHeight: Float = 1.0f / 720.0f
+    private var texelWidth: Float = 1.0f / 720.0f
+    private var texelHeight: Float = 1.0f / 1280.0f
 
     init {
         try {
@@ -63,7 +64,7 @@ private class WinkUltraHdShaderProgram(
             glProgram.setFloatsUniform("uTransformationMatrix", identity)
             glProgram.setFloatsUniform("uTexTransformationMatrix", identity)
             glProgram.setFloatUniform("uSharpness", sharpness)
-            glProgram.setFloatUniform("uDenoise", denoise)
+            glProgram.setFloatUniform("uClarity", clarity)
             glProgram.setFloatUniform("uVibrance", vibrance)
             glProgram.setFloatsUniform("uTexelSize", floatArrayOf(texelWidth, texelHeight))
         } catch (e: GlUtil.GlException) {
@@ -72,8 +73,8 @@ private class WinkUltraHdShaderProgram(
     }
 
     override fun configure(inputWidth: Int, inputHeight: Int): Size {
-        val safeW = if (inputWidth > 0) inputWidth else 1280
-        val safeH = if (inputHeight > 0) inputHeight else 720
+        val safeW = if (inputWidth > 0) inputWidth else 720
+        val safeH = if (inputHeight > 0) inputHeight else 1280
         texelWidth = 1.0f / safeW.toFloat()
         texelHeight = 1.0f / safeH.toFloat()
         return Size(safeW, safeH)
@@ -85,7 +86,7 @@ private class WinkUltraHdShaderProgram(
             glProgram.setSamplerTexIdUniform("uTexSampler", inputTexId, /* texUnitIndex= */ 0)
             glProgram.setFloatsUniform("uTexelSize", floatArrayOf(texelWidth, texelHeight))
             glProgram.setFloatUniform("uSharpness", sharpness)
-            glProgram.setFloatUniform("uDenoise", denoise)
+            glProgram.setFloatUniform("uClarity", clarity)
             glProgram.setFloatUniform("uVibrance", vibrance)
             glProgram.bindAttributesAndUniforms()
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
@@ -128,7 +129,7 @@ private class WinkUltraHdShaderProgram(
             uniform sampler2D uTexSampler;
             uniform vec2 uTexelSize;
             uniform float uSharpness;
-            uniform float uDenoise;
+            uniform float uClarity;
             uniform float uVibrance;
             varying vec2 vTexSamplingCoord;
 
@@ -138,68 +139,57 @@ private class WinkUltraHdShaderProgram(
 
             void main() {
               vec2 uv = vTexSamplingCoord;
-              vec2 dx = vec2(uTexelSize.x, 0.0);
-              vec2 dy = vec2(0.0, uTexelSize.y);
 
-              // 9-tap neighborhood fetch
+              // Center raw pixel (never pre-blurred!)
               vec4 c4 = texture2D(uTexSampler, uv);
               vec3 c  = c4.rgb;
-              vec3 n  = texture2D(uTexSampler, uv - dy).rgb;
-              vec3 s  = texture2D(uTexSampler, uv + dy).rgb;
-              vec3 w  = texture2D(uTexSampler, uv - dx).rgb;
-              vec3 e  = texture2D(uTexSampler, uv + dx).rgb;
-              vec3 nw = texture2D(uTexSampler, uv - dx - dy).rgb;
-              vec3 ne = texture2D(uTexSampler, uv + dx - dy).rgb;
-              vec3 sw = texture2D(uTexSampler, uv - dx + dy).rgb;
-              vec3 se = texture2D(uTexSampler, uv + dx + dy).rgb;
 
-              // STAGE 1: Edge-Preserving Bilateral De-Blocking & Mosquito Noise Filter
-              // Smooths flat compression blocks (small color diffs < 0.055) while preserving sharp edges
-              float invSigmaSq = 360.0; // Threshold tuned for H.264 macroblock smoothing
-              float wn  = exp(-dot(n - c, n - c) * invSigmaSq);
-              float ws  = exp(-dot(s - c, s - c) * invSigmaSq);
-              float ww  = exp(-dot(w - c, w - c) * invSigmaSq);
-              float we  = exp(-dot(e - c, e - c) * invSigmaSq);
-              float wnw = exp(-dot(nw - c, nw - c) * invSigmaSq) * 0.7;
-              float wne = exp(-dot(ne - c, ne - c) * invSigmaSq) * 0.7;
-              float wsw = exp(-dot(sw - c, sw - c) * invSigmaSq) * 0.7;
-              float wse = exp(-dot(se - c, se - c) * invSigmaSq) * 0.7;
+              // SCALE 1: Fine 3x3 Unsharp Kernel (1.0px radius — sharpens text, numbers & HP bar ticks)
+              vec2 dx1 = vec2(uTexelSize.x, 0.0);
+              vec2 dy1 = vec2(0.0, uTexelSize.y);
+              vec3 n1  = texture2D(uTexSampler, uv - dy1).rgb;
+              vec3 s1  = texture2D(uTexSampler, uv + dy1).rgb;
+              vec3 w1  = texture2D(uTexSampler, uv - dx1).rgb;
+              vec3 e1  = texture2D(uTexSampler, uv + dx1).rgb;
+              vec3 nw1 = texture2D(uTexSampler, uv - dx1 - dy1).rgb;
+              vec3 ne1 = texture2D(uTexSampler, uv + dx1 - dy1).rgb;
+              vec3 sw1 = texture2D(uTexSampler, uv - dx1 + dy1).rgb;
+              vec3 se1 = texture2D(uTexSampler, uv + dx1 + dy1).rgb;
 
-              float wSum = 1.0 + wn + ws + ww + we + wnw + wne + wsw + wse;
-              vec3 bilateralClean = (c + n * wn + s * ws + w * ww + e * we +
-                                     nw * wnw + ne * wne + sw * wsw + se * wse) / wSum;
-              vec3 baseColor = mix(c, bilateralClean, clamp(uDenoise, 0.0, 1.0));
+              vec3 blurFine = (n1 + s1 + w1 + e1) * 0.15 + (nw1 + ne1 + sw1 + se1) * 0.10;
+              vec3 detailFine = c - blurFine;
 
-              // STAGE 2: Contrast-Adaptive Sharpening (CAS) with Anti-Halo Neighborhood Clamp
-              vec3 minCross = min(c, min(min(n, s), min(w, e)));
-              vec3 maxCross = max(c, max(max(n, s), max(w, e)));
-              vec3 minDiag  = min(minCross, min(min(nw, ne), min(sw, se)));
-              vec3 maxDiag  = max(maxCross, max(max(nw, ne), max(sw, se)));
-              vec3 localMin = 0.5 * (minCross + minDiag);
-              vec3 localMax = 0.5 * (maxCross + maxDiag);
+              // SCALE 2: Wide 7x7 Clarity Kernel (2.5px radius — reconstructs zoomed-in game edges & armor)
+              vec2 dx2 = vec2(uTexelSize.x * 2.5, 0.0);
+              vec2 dy2 = vec2(0.0, uTexelSize.y * 2.5);
+              vec3 n2  = texture2D(uTexSampler, uv - dy2).rgb;
+              vec3 s2  = texture2D(uTexSampler, uv + dy2).rgb;
+              vec3 w2  = texture2D(uTexSampler, uv - dx2).rgb;
+              vec3 e2  = texture2D(uTexSampler, uv + dx2).rgb;
+              vec3 nw2 = texture2D(uTexSampler, uv - dx2 - dy2).rgb;
+              vec3 ne2 = texture2D(uTexSampler, uv + dx2 - dy2).rgb;
+              vec3 sw2 = texture2D(uTexSampler, uv - dx2 + dy2).rgb;
+              vec3 se2 = texture2D(uTexSampler, uv + dx2 + dy2).rgb;
 
-              // High-frequency detail extraction from cross + diagonal blur
-              vec3 neighborhoodBlur = (n + s + w + e) * 0.15 + (nw + ne + sw + se) * 0.10;
-              vec3 detail = baseColor - neighborhoodBlur;
+              vec3 blurWide = (n2 + s2 + w2 + e2) * 0.15 + (nw2 + ne2 + sw2 + se2) * 0.10;
+              vec3 detailWide = c - blurWide;
 
-              // Edge mask: amplify true edges, suppress flat area noise amplification
-              float edgeGradient = abs(getLuma(detail));
-              float edgeMask = smoothstep(0.008, 0.065, edgeGradient);
+              // Noise gate: only suppress ultra-flat mosquito noise (< 0.005), full strength on all edges
+              float edgeEnergy = abs(getLuma(detailFine)) + abs(getLuma(detailWide));
+              float noiseGate = smoothstep(0.003, 0.016, edgeEnergy);
 
-              vec3 sharpened = baseColor + detail * (uSharpness * 1.85 * edgeMask);
-              // Anti-halo clamp prevents ugly white/black ringing around text and HP bars
-              sharpened = clamp(sharpened, localMin - 0.025, localMax + 0.025);
-              sharpened = clamp(sharpened, 0.0, 1.0);
+              // Dual-Radius Unsharp Reconstruction (matches FFmpeg unsharp=3:3:1.65 + unsharp=7:7:1.15)
+              vec3 boost = (detailFine * (1.65 * uSharpness) + detailWide * (1.05 * uClarity)) * noiseGate;
+              // Soft limit at +-0.24 so text & UI borders pop strongly without severe clipping
+              boost = clamp(boost, -0.24, 0.24);
+              vec3 sharpened = clamp(c + boost, 0.0, 1.0);
 
-              // STAGE 3: Shadow-Safe Vibrance Pop (Zero Crushed Blacks)
-              float luma = getLuma(sharpened);
-              float maxChan = max(sharpened.r, max(sharpened.g, sharpened.b));
-              float minChan = min(sharpened.r, min(sharpened.g, sharpened.b));
-              float sat = maxChan - minChan;
-              // Boost less-saturated colors smoothly without clipping bright/saturated colors
-              vec3 vibrant = mix(vec3(luma), sharpened, 1.0 + (uVibrance * (1.0 - sat)));
+              // Subtle Micro-Contrast (1.06x) + Vibrance/Saturation Pop (1.12x)
+              vec3 contrasted = clamp((sharpened - 0.5) * 1.06 + 0.5, 0.0, 1.0);
+              float luma = getLuma(contrasted);
+              vec3 finalRgb = mix(vec3(luma), contrasted, 1.0 + uVibrance);
 
-              gl_FragColor = vec4(clamp(vibrant, 0.0, 1.0), c4.a);
+              gl_FragColor = vec4(clamp(finalRgb, 0.0, 1.0), c4.a);
             }
         """
     }

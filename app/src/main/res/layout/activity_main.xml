@@ -35,7 +35,7 @@
                 android:background="@drawable/bg_badge_green"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
-                android:text="WINK GPU ENGINE v1.3 BETA"
+                android:text="WINK GPU ENGINE v1.4 BETA"
                 android:textColor="@color/emerald_light"
                 android:textSize="11sp"
                 android:textStyle="bold" />

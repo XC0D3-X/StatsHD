@@ -33,34 +33,34 @@ jobs:
 
       - name: Prepare Beta APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.3.0-beta.apk
-          ls -lh StatHD-v1.3.0-beta.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.0-beta.apk
+          ls -lh StatHD-v1.4.0-beta.apk
 
       - name: Upload Beta APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-Beta-APK
-          path: StatHD-v1.3.0-beta.apk
+          path: StatHD-v1.4.0-beta.apk
           if-no-files-found: error
 
       - name: Publish Pre-Release Beta APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.3.0-beta
-          name: "StatHD v1.3.0-beta — Wink GPU Ultra-HD Restoration Engine (Pre-Release)"
+          tag_name: v1.4.0-beta
+          name: "StatHD v1.4.0-beta — Dual-Radius Wink Unsharp (3x3 + 7x7 Clarity) Build"
           body: |
-            ### 🧪 StatHD v1.3.0-beta (Wink GPU Quality Restoration Build)
+            ### 🧪 StatHD v1.4.0-beta (Calibrated on Portrait Gameplay Master)
             > **Note:** Active **Beta / Pre-Release** build (`prerelease: true`).
 
-            #### New in v1.3.0-beta:
-            - **✨ Wink GPU Ultra-HD Restoration Shader (`WinkUltraHdEffect.kt`):** Real-time 9-tap OpenGL ES 2.0 GPU fragment shader combining:
-              1. **Edge-Preserving Bilateral De-Blocking & Mosquito Noise Removal:** Smooths flat compression blocks on grass/sky/skin without blurring borders.
-              2. **Contrast-Adaptive Sharpening (CAS) with Anti-Halo Clamp:** Reconstructs crisp text, hero HP bars, outlines, and fine details without white ringing.
-              3. **Shadow-Safe Vibrance Pop:** Boosts muted colors smoothly while preserving natural dark shadow visibility.
-            - **🔥 Wink MAX Game/Anime Clarifier Toggle:** Extra detail pop mode for gaming and anime clips.
+            #### What's Fixed & Upgraded in v1.4.0-beta:
+            - **Removed Self-Canceling Bilateral Blur:** Preserves 100% raw center pixel sharpness (`c`) before applying dual-scale unsharp reconstruction.
+            - **Dual-Radius Multi-Scale Unsharp + 3D Clarity Shader (`WinkUltraHdEffect.kt`):**
+              1. **Scale 1 (`3x3` Fine Kernel • `1.0px` radius • `1.65x` strength):** Sharpens fine text, player names, damage numbers, and HP bar tick lines.
+              2. **Scale 2 (`7x7` Wide Clarity Kernel • `2.5px` radius • `1.15x` strength):** Reconstructs zoomed-in game edges, hero armor, bush leaves, and skill rings so edge coefficients survive WhatsApp's internal H.264 quantization.
+              3. **Unlocked Dynamic Range (`±0.24` vs previous `±0.025`):** 9.6x higher sharpening headroom with `1.06x` micro-contrast and `1.12x` vibrance pop.
 
             📲 **Direct Beta APK Download:**
-            Tap **`StatHD-v1.3.0-beta.apk`** under **Assets** below to install on your Android device.
-          files: StatHD-v1.3.0-beta.apk
+            Tap **`StatHD-v1.4.0-beta.apk`** under **Assets** below to install on your Android device.
+          files: StatHD-v1.4.0-beta.apk
           draft: false
           prerelease: true
