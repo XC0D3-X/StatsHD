@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -32,17 +32,28 @@ jobs:
         run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Prepare APK
-        run: cp app/build/outputs/apk/release/app-release.apk StatHD-v1.0.0.apk
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.0.0.apk
+          ls -lh StatHD-v1.0.0.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-APK
           path: StatHD-v1.0.0.apk
+          if-no-files-found: error
 
       - name: Publish APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: stathd-v1.0.0
-          name: "StatHD v1.0.0 — WhatsApp Status HD Optimizer"
+          name: "StatHD v1.0.0 — WhatsApp Status HD Video Optimizer (Android APK)"
+          body: |
+            ### StatHD v1.0.0 (PureStatus Engine for Android)
+            Hardware-accelerated WhatsApp Status HD video optimizer built with Kotlin & AndroidX Media3 (`H.264 Bitrate-Lock` + `OpenGL Downscaler` + `Crisp Micro-Contrast Boost` + `Auto HDR-to-SDR Tone-Mapping`).
+
+            📲 **Direct APK Download for Android:**
+            Tap **`StatHD-v1.0.0.apk`** under **Assets** below to download and install directly on your Android device.
           files: StatHD-v1.0.0.apk
+          draft: false
+          prerelease: false

@@ -236,7 +236,7 @@ class MainActivity : AppCompatActivity() {
 
         // 1. Configure Video Effects (Resolution Downscale + Crisp Micro-Contrast)
         val videoEffects = mutableListOf<Effect>()
-        videoEffects.add(Presentation.createForShortSide(currentPreset.shortSidePx))
+        videoEffects.add(Presentation.createForHeight(currentPreset.shortSidePx))
         if (switchCrispBoost.isChecked) {
             // Subtle micro-contrast enhancement so downscaled text & edges look sharper on WhatsApp Status
             videoEffects.add(Contrast(0.08f))

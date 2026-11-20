@@ -4,7 +4,7 @@
 
 **Hardware-Accelerated Android Video Optimizer to Bypass WhatsApp Status Compression**
 
-[![Download APK](https://img.shields.io/badge/Download_APK-StatHD_v1.0.0-10B981?style=for-the-badge&logo=android&logoColor=white)](https://github.com/XC0D3-X/FramePure/releases/latest)
+[![Download APK](https://img.shields.io/badge/Download_APK-StatHD_v1.0.0-10B981?style=for-the-badge&logo=android&logoColor=white)](https://github.com/XC0D3-X/StatsHD/releases/latest)
 [![Telegram](https://img.shields.io/badge/Telegram-@harithwyd-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/harithwyd)
 [![GitHub](https://img.shields.io/badge/GitHub-XC0D3--X-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/XC0D3-X)
 
