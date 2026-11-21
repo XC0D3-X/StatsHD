@@ -97,6 +97,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fabPickVideo: ImageButton
 
     // Timeline controls
+    private lateinit var layoutTimelineBar: LinearLayout
     private lateinit var btnPlayPause: ImageButton
     private lateinit var tvCurrentTime: TextView
     private lateinit var seekBarTimeline: SeekBar
@@ -135,9 +136,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnShareWhatsApp: MaterialButton
     private lateinit var btnSaveGallery: MaterialButton
 
-    // State
-    private var selectedVideoUri: Uri? = null
-    private var outputVideoFile: File? = null
+    // Media State
+    private var selectedMediaUri: Uri? = null
+    private var isPhotoMode: Boolean = false
+    private var outputMediaFile: File? = null
+    private var photoBeforeBitmap: Bitmap? = null
+    private var photoAfterBitmap: Bitmap? = null
+
     private var sourceSizeBytes: Long = 0L
     private var sourceWidth: Int = 0
     private var sourceHeight: Int = 0
@@ -158,7 +163,7 @@ class MainActivity : AppCompatActivity() {
 
     private val timelineUpdateRunnable = object : Runnable {
         override fun run() {
-            if (isVideoPlaying && !isScrubbingTimeline && compareMode != CompareMode.SPLIT && videoPreview.visibility == View.VISIBLE) {
+            if (!isPhotoMode && isVideoPlaying && !isScrubbingTimeline && compareMode != CompareMode.SPLIT && videoPreview.visibility == View.VISIBLE) {
                 try {
                     val posMs = videoPreview.currentPosition.toLong()
                     val durMs = max(1L, activeVideoDurationMs)
@@ -172,11 +177,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val pickVideoLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
+    // Unified Video + Photo Picker
+    private val pickMediaLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            onVideoSelected(uri)
+            try {
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: Exception) {
+            }
+            onMediaSelected(uri)
         }
     }
 
@@ -209,6 +219,7 @@ class MainActivity : AppCompatActivity() {
         tvSourceSpecs = findViewById(R.id.tvSourceSpecs)
         fabPickVideo = findViewById(R.id.fabPickVideo)
 
+        layoutTimelineBar = findViewById(R.id.layoutTimelineBar)
         btnPlayPause = findViewById(R.id.btnPlayPause)
         tvCurrentTime = findViewById(R.id.tvCurrentTime)
         seekBarTimeline = findViewById(R.id.seekBarTimeline)
@@ -247,7 +258,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        // Hamburger Menu Popup
         btnMenu.setOnClickListener { overlayMenuPopup.visibility = View.VISIBLE }
         btnCloseMenu.setOnClickListener { overlayMenuPopup.visibility = View.GONE }
         overlayMenuPopup.setOnClickListener { overlayMenuPopup.visibility = View.GONE }
@@ -256,8 +266,19 @@ class MainActivity : AppCompatActivity() {
             switchWinkMax.isEnabled = isChecked
         }
 
-        // Preset Popup
-        btnPresetPicker.setOnClickListener { overlayPresetPopup.visibility = View.VISIBLE }
+        switchWinkMax.setOnCheckedChangeListener { _, _ ->
+            if (isPhotoMode) {
+                tvPresetPill.text = if (switchWinkMax.isChecked) "HD Photo • 2048px" else "HD Photo • 1600px"
+            }
+        }
+
+        btnPresetPicker.setOnClickListener {
+            if (isPhotoMode) {
+                overlayMenuPopup.visibility = View.VISIBLE
+            } else {
+                overlayPresetPopup.visibility = View.VISIBLE
+            }
+        }
         btnClosePreset.setOnClickListener { overlayPresetPopup.visibility = View.GONE }
         overlayPresetPopup.setOnClickListener { overlayPresetPopup.visibility = View.GONE }
 
@@ -265,17 +286,15 @@ class MainActivity : AppCompatActivity() {
         cardPreset45.setOnClickListener { selectPreset(StatusPreset.CLIP_45S_HD) }
         cardPreset60.setOnClickListener { selectPreset(StatusPreset.CLIP_60S_FULL) }
 
-        // Bottom-right '+' FAB
+        // Bottom-right '+' FAB opens unified Video & Photo picker
         fabPickVideo.setOnClickListener {
-            pickVideoLauncher.launch("video/*")
+            pickMediaLauncher.launch(arrayOf("video/*", "image/*"))
         }
 
-        // Before / Split / After tabs
         tabOriginal.setOnClickListener { switchCompareMode(CompareMode.ORIGINAL) }
         tabSplit.setOnClickListener { switchCompareMode(CompareMode.SPLIT) }
         tabEnhanced.setOnClickListener { switchCompareMode(CompareMode.ENHANCED) }
 
-        // Split slider
         seekBarSplit.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 applySplitClip(progress)
@@ -285,8 +304,8 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Play / Pause button
         btnPlayPause.setOnClickListener {
+            if (isPhotoMode) return@setOnClickListener
             if (compareMode == CompareMode.SPLIT) {
                 switchCompareMode(CompareMode.ENHANCED)
                 return@setOnClickListener
@@ -294,10 +313,9 @@ class MainActivity : AppCompatActivity() {
             togglePlayback()
         }
 
-        // Video Timeline Scrubber
         seekBarTimeline.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (!fromUser) return
+                if (!fromUser || isPhotoMode) return
                 val targetMs = (activeVideoDurationMs * (progress / 1000.0)).toLong()
                 tvCurrentTime.text = formatTimeMs(targetMs)
                 if (compareMode != CompareMode.SPLIT && videoPreview.visibility == View.VISIBLE) {
@@ -314,14 +332,13 @@ class MainActivity : AppCompatActivity() {
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 isScrubbingTimeline = false
-                if (compareMode == CompareMode.SPLIT) {
+                if (!isPhotoMode && compareMode == CompareMode.SPLIT) {
                     val targetMs = (activeVideoDurationMs * ((seekBar?.progress ?: 0) / 1000.0)).toLong()
                     loadSplitComparisonFrames(targetMs)
                 }
             }
         })
 
-        // Trim start slider
         seekBarTrimStart.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 updateTrimWindowFromSlider(progress, seekPreview = fromUser)
@@ -331,22 +348,20 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Export button
         btnOptimize.setOnClickListener {
-            selectedVideoUri?.let { executeOptimization(it) }
+            selectedMediaUri?.let { startOptimization(it) }
         }
 
         btnReExport.setOnClickListener {
-            selectedVideoUri?.let { executeOptimization(it) }
+            selectedMediaUri?.let { startOptimization(it) }
         }
 
         btnOpenSharePopup.setOnClickListener {
-            if (outputVideoFile != null) {
+            if (outputMediaFile != null) {
                 overlayResultPopup.visibility = View.VISIBLE
             }
         }
 
-        // Result popup actions
         btnCloseResult.setOnClickListener { overlayResultPopup.visibility = View.GONE }
         overlayResultPopup.setOnClickListener { overlayResultPopup.visibility = View.GONE }
 
@@ -356,16 +371,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnShareWhatsApp.setOnClickListener {
-            outputVideoFile?.let { shareToWhatsApp(it) }
+            outputMediaFile?.let { shareToWhatsApp(it) }
         }
 
         btnSaveGallery.setOnClickListener {
-            outputVideoFile?.let { saveVideoToGallery(it) }
+            outputMediaFile?.let { saveMediaToGallery(it) }
         }
     }
 
     private fun handleIncomingShareIntent(intent: Intent?) {
-        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("video/") == true) {
+        val type = intent?.type ?: return
+        if (intent.action == Intent.ACTION_SEND && (type.startsWith("video/") || type.startsWith("image/"))) {
             val sharedUri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
             } else {
@@ -373,7 +389,7 @@ class MainActivity : AppCompatActivity() {
                 intent.getParcelableExtra(Intent.EXTRA_STREAM)
             }
             if (sharedUri != null) {
-                onVideoSelected(sharedUri)
+                onMediaSelected(sharedUri, forcedMime = type)
             }
         }
     }
@@ -395,21 +411,73 @@ class MainActivity : AppCompatActivity() {
         updateTrimWindowFromSlider(0, seekPreview = true)
     }
 
-    private fun onVideoSelected(uri: Uri) {
-        selectedVideoUri = uri
-        outputVideoFile = null
+    private fun onMediaSelected(uri: Uri, forcedMime: String? = null) {
+        val mime = forcedMime ?: contentResolver.getType(uri) ?: ""
+        isPhotoMode = mime.startsWith("image/")
+
+        selectedMediaUri = uri
+        outputMediaFile = null
+        photoBeforeBitmap = null
+        photoAfterBitmap = null
         compareMode = CompareMode.ORIGINAL
+
         layoutCompareBar.visibility = View.GONE
-        layoutSplitCompare.visibility = View.GONE
         layoutEmptyState.visibility = View.GONE
         layoutReadyActions.visibility = View.GONE
         btnOptimize.visibility = View.VISIBLE
-        videoPreview.visibility = View.VISIBLE
         btnOptimize.isEnabled = true
-        btnPlayPause.isEnabled = true
-        seekBarTimeline.isEnabled = true
 
         sourceSizeBytes = queryFileSize(uri)
+
+        if (isPhotoMode) {
+            onPhotoSelected(uri)
+        } else {
+            onVideoSelected(uri)
+        }
+    }
+
+    private fun onPhotoSelected(uri: Uri) {
+        if (isVideoPlaying) {
+            try { videoPreview.stopPlayback() } catch (_: Exception) {}
+            isVideoPlaying = false
+        }
+        videoPreview.visibility = View.GONE
+        layoutTimelineBar.visibility = View.GONE
+        layoutSplitCompare.visibility = View.VISIBLE
+        viewSplitLine.visibility = View.GONE
+        seekBarSplit.visibility = View.GONE
+        ivBeforeFrame.visibility = View.GONE
+
+        btnOptimize.text = "Export HD Photo"
+        tvPresetPill.text = if (switchWinkMax.isChecked) "HD Photo • 2048px" else "HD Photo • 1600px"
+
+        thread(start = true) {
+            val bmp = HdPhotoOptimizer.decodeOrientedBitmap(this, uri, maxDimForPreview = 1600)
+            mainHandler.post {
+                if (bmp != null) {
+                    sourceWidth = bmp.width
+                    sourceHeight = bmp.height
+                    photoBeforeBitmap = bmp
+                    ivAfterFrame.setImageBitmap(bmp)
+                    val sizeMb = sourceSizeBytes / (1024.0 * 1024.0)
+                    tvSourceSpecs.visibility = View.VISIBLE
+                    tvSourceSpecs.text = String.format(Locale.US, "Photo • %dx%d • %.2f MB", sourceWidth, sourceHeight, sizeMb)
+                } else {
+                    Toast.makeText(this, "Could not load image", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun onVideoSelected(uri: Uri) {
+        layoutSplitCompare.visibility = View.GONE
+        layoutTimelineBar.visibility = View.VISIBLE
+        videoPreview.visibility = View.VISIBLE
+        btnPlayPause.isEnabled = true
+        seekBarTimeline.isEnabled = true
+        btnOptimize.text = "Export HD Video"
+        tvPresetPill.text = currentPreset.pillLabel
+
         val retriever = MediaMetadataRetriever()
         try {
             retriever.setDataSource(this, uri)
@@ -437,10 +505,7 @@ class MainActivity : AppCompatActivity() {
             sourceBitrateBps = 0L
             tvSourceSpecs.visibility = View.GONE
         } finally {
-            try {
-                retriever.release()
-            } catch (_: Exception) {
-            }
+            try { retriever.release() } catch (_: Exception) {}
         }
 
         activeVideoDurationMs = sourceDurationMs
@@ -495,11 +560,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun switchCompareMode(mode: CompareMode) {
-        val outFile = outputVideoFile ?: return
-        val srcUri = selectedVideoUri ?: return
+        val outFile = outputMediaFile ?: return
+        val srcUri = selectedMediaUri ?: return
+
+        compareMode = mode
+        updateCompareTabStyles(mode)
+
+        if (isPhotoMode) {
+            val beforeBmp = photoBeforeBitmap ?: return
+            val afterBmp = photoAfterBitmap ?: return
+            layoutSplitCompare.visibility = View.VISIBLE
+            ivBeforeFrame.setImageBitmap(beforeBmp)
+            ivAfterFrame.setImageBitmap(afterBmp)
+
+            when (mode) {
+                CompareMode.ORIGINAL -> {
+                    ivBeforeFrame.visibility = View.VISIBLE
+                    ivBeforeFrame.clipBounds = null
+                    viewSplitLine.visibility = View.GONE
+                    seekBarSplit.visibility = View.GONE
+                }
+                CompareMode.ENHANCED -> {
+                    ivBeforeFrame.visibility = View.GONE
+                    viewSplitLine.visibility = View.GONE
+                    seekBarSplit.visibility = View.GONE
+                }
+                CompareMode.SPLIT -> {
+                    ivBeforeFrame.visibility = View.VISIBLE
+                    viewSplitLine.visibility = View.VISIBLE
+                    seekBarSplit.visibility = View.VISIBLE
+                    layoutSplitCompare.post { applySplitClip(seekBarSplit.progress) }
+                }
+            }
+            return
+        }
 
         val currentPosMs = try {
-            if (compareMode != CompareMode.SPLIT && videoPreview.visibility == View.VISIBLE) {
+            if (videoPreview.visibility == View.VISIBLE) {
                 videoPreview.currentPosition.toLong()
             } else {
                 (activeVideoDurationMs * (seekBarTimeline.progress / 1000.0)).toLong()
@@ -507,9 +604,6 @@ class MainActivity : AppCompatActivity() {
         } catch (_: Exception) {
             0L
         }
-
-        compareMode = mode
-        updateCompareTabStyles(mode)
 
         when (mode) {
             CompareMode.ORIGINAL -> {
@@ -527,6 +621,9 @@ class MainActivity : AppCompatActivity() {
                 }
                 videoPreview.visibility = View.GONE
                 layoutSplitCompare.visibility = View.VISIBLE
+                ivBeforeFrame.visibility = View.VISIBLE
+                viewSplitLine.visibility = View.VISIBLE
+                seekBarSplit.visibility = View.VISIBLE
                 loadSplitComparisonFrames(currentPosMs)
             }
         }
@@ -550,8 +647,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadSplitComparisonFrames(relativePosMs: Long) {
-        val srcUri = selectedVideoUri ?: return
-        val outFile = outputVideoFile ?: return
+        val srcUri = selectedMediaUri ?: return
+        val outFile = outputMediaFile ?: return
 
         val origTimeUs = (trimStartMs + relativePosMs) * 1000L
         val enhTimeUs = relativePosMs * 1000L
@@ -635,6 +732,71 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun startOptimization(inputUri: Uri) {
+        if (isPhotoMode) {
+            executePhotoOptimization(inputUri)
+        } else {
+            executeVideoOptimization(inputUri)
+        }
+    }
+
+    private fun executePhotoOptimization(inputUri: Uri) {
+        setBusyUi(true, "Enhancing HD photo...")
+        progressBar.progress = 40
+
+        val outDir = File(cacheDir, "stathd_exports").apply { mkdirs() }
+        val outFile = File(outDir, "StatHD_Photo_${System.currentTimeMillis()}.jpg")
+        if (outFile.exists()) outFile.delete()
+
+        val enableSharpen = switchWinkRestore.isChecked
+        val highClarity = switchWinkMax.isChecked
+        val rotate90 = switchRotateVertical.isChecked
+
+        thread(start = true) {
+            try {
+                val res = HdPhotoOptimizer.optimizeForWhatsApp(
+                    context = this,
+                    uri = inputUri,
+                    outFile = outFile,
+                    enableSharpen = enableSharpen,
+                    highClarity = highClarity,
+                    rotate90 = rotate90
+                )
+                mainHandler.post {
+                    outputMediaFile = res.outputFile
+                    photoBeforeBitmap = res.beforeBitmap
+                    photoAfterBitmap = res.afterBitmap
+                    progressBar.progress = 100
+                    setBusyUi(false, "")
+                    btnOptimize.visibility = View.GONE
+                    layoutReadyActions.visibility = View.VISIBLE
+
+                    val newSizeKb = res.outputFile.length() / 1024.0
+                    tvResultSpecs.text = String.format(
+                        Locale.US,
+                        "HD Photo • %dx%d • %.0f KB (JPEG Q92)",
+                        res.outWidth,
+                        res.outHeight,
+                        newSizeKb
+                    )
+
+                    layoutCompareBar.visibility = View.VISIBLE
+                    switchCompareMode(CompareMode.ENHANCED)
+                    overlayResultPopup.visibility = View.VISIBLE
+                }
+            } catch (e: Exception) {
+                mainHandler.post {
+                    setBusyUi(false, "")
+                    Toast.makeText(
+                        this,
+                        "Photo export failed: ${e.localizedMessage ?: "Please try again"}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
     private fun canUseLosslessDirectCopy(): Boolean {
         if (switchWinkRestore.isChecked) return false
         if (sourceWidth <= 0 || sourceHeight <= 0 || sourceDurationMs <= 0L) return false
@@ -669,11 +831,11 @@ class MainActivity : AppCompatActivity() {
         return Pair(targetW, targetH)
     }
 
-    private fun executeOptimization(inputUri: Uri) {
+    private fun executeVideoOptimization(inputUri: Uri) {
         val outDir = File(cacheDir, "stathd_exports").apply { mkdirs() }
         val outFile = File(outDir, "StatHD_${System.currentTimeMillis()}.mp4")
         if (outFile.exists()) outFile.delete()
-        outputVideoFile = outFile
+        outputMediaFile = outFile
 
         if (canUseLosslessDirectCopy()) {
             startLosslessStreamCut(inputUri, outFile)
@@ -740,7 +902,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 muxer.stop()
                 mainHandler.post {
-                    onExportFinished(outFile, sourceBitrateBps.toInt(), null)
+                    onVideoExportFinished(outFile, sourceBitrateBps.toInt(), null)
                 }
             } catch (_: Exception) {
                 mainHandler.post {
@@ -835,7 +997,7 @@ class MainActivity : AppCompatActivity() {
             .setEncoderFactory(encoderFactory)
             .addListener(object : Transformer.Listener {
                 override fun onCompleted(composition: Composition, exportResult: ExportResult) {
-                    onExportFinished(outFile, targetBitrateBps, targetDims)
+                    onVideoExportFinished(outFile, targetBitrateBps, targetDims)
                 }
 
                 override fun onError(
@@ -894,7 +1056,7 @@ class MainActivity : AppCompatActivity() {
         layoutProgress.visibility = if (busy) View.VISIBLE else View.GONE
     }
 
-    private fun onExportFinished(outFile: File, targetBitrateBps: Int, targetDims: Pair<Int, Int>?) {
+    private fun onVideoExportFinished(outFile: File, targetBitrateBps: Int, targetDims: Pair<Int, Int>?) {
         activeTransformer = null
         setBusyUi(false, "")
         btnOptimize.visibility = View.GONE
@@ -922,13 +1084,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun shareToWhatsApp(file: File) {
+        val mime = if (isPhotoMode) "image/jpeg" else "video/mp4"
         val contentUri = FileProvider.getUriForFile(
             this,
             "${applicationContext.packageName}.fileprovider",
             file
         )
         val waIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "video/mp4"
+            type = mime
             putExtra(Intent.EXTRA_STREAM, contentUri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             setPackage("com.whatsapp")
@@ -938,43 +1101,72 @@ class MainActivity : AppCompatActivity() {
         } catch (_: Exception) {
             val chooser = Intent.createChooser(
                 Intent(Intent.ACTION_SEND).apply {
-                    type = "video/mp4"
+                    type = mime
                     putExtra(Intent.EXTRA_STREAM, contentUri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 },
-                "Share video to WhatsApp"
+                "Share to WhatsApp"
             )
             startActivity(chooser)
         }
     }
 
-    private fun saveVideoToGallery(file: File) {
+    private fun saveMediaToGallery(file: File) {
         try {
-            val fileName = "StatHD_${System.currentTimeMillis()}.mp4"
-            val values = ContentValues().apply {
-                put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
-                put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/StatHD")
-                    put(MediaStore.Video.Media.IS_PENDING, 1)
+            if (isPhotoMode) {
+                val fileName = "StatHD_Photo_${System.currentTimeMillis()}.jpg"
+                val values = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/StatHD")
+                        put(MediaStore.Images.Media.IS_PENDING, 1)
+                    }
                 }
-            }
-            val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                } else {
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                }
+                val itemUri = contentResolver.insert(collection, values)
+                if (itemUri != null) {
+                    contentResolver.openOutputStream(itemUri)?.use { out ->
+                        file.inputStream().use { input -> input.copyTo(out) }
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        values.clear()
+                        values.put(MediaStore.Images.Media.IS_PENDING, 0)
+                        contentResolver.update(itemUri, values, null, null)
+                    }
+                    Toast.makeText(this, "Saved to Pictures/StatHD/$fileName", Toast.LENGTH_LONG).show()
+                }
             } else {
-                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-            }
-            val itemUri = contentResolver.insert(collection, values)
-            if (itemUri != null) {
-                contentResolver.openOutputStream(itemUri)?.use { out ->
-                    file.inputStream().use { input -> input.copyTo(out) }
+                val fileName = "StatHD_${System.currentTimeMillis()}.mp4"
+                val values = ContentValues().apply {
+                    put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/StatHD")
+                        put(MediaStore.Video.Media.IS_PENDING, 1)
+                    }
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    values.clear()
-                    values.put(MediaStore.Video.Media.IS_PENDING, 0)
-                    contentResolver.update(itemUri, values, null, null)
+                val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                } else {
+                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI
                 }
-                Toast.makeText(this, "Saved to Movies/StatHD/$fileName", Toast.LENGTH_LONG).show()
+                val itemUri = contentResolver.insert(collection, values)
+                if (itemUri != null) {
+                    contentResolver.openOutputStream(itemUri)?.use { out ->
+                        file.inputStream().use { input -> input.copyTo(out) }
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        values.clear()
+                        values.put(MediaStore.Video.Media.IS_PENDING, 0)
+                        contentResolver.update(itemUri, values, null, null)
+                    }
+                    Toast.makeText(this, "Saved to Movies/StatHD/$fileName", Toast.LENGTH_LONG).show()
+                }
             }
         } catch (e: Exception) {
             Toast.makeText(this, "Failed to save: ${e.localizedMessage}", Toast.LENGTH_LONG).show()

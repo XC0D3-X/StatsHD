@@ -33,30 +33,34 @@ jobs:
 
       - name: Prepare Beta APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.1-beta.apk
-          ls -lh StatHD-v1.4.1-beta.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.2-beta.apk
+          ls -lh StatHD-v1.4.2-beta.apk
 
       - name: Upload Beta APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-Beta-APK
-          path: StatHD-v1.4.1-beta.apk
+          path: StatHD-v1.4.2-beta.apk
           if-no-files-found: error
 
       - name: Publish Pre-Release Beta APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.1-beta
-          name: "StatHD v1.4.1-beta — Instant Share / Save After Compare Fix"
+          tag_name: v1.4.2-beta
+          name: "StatHD v1.4.2-beta — HD Photo Optimizer + Unified Video & Photo Picker"
           body: |
-            ### StatHD v1.4.1-beta (Pre-Release Testing Build)
+            ### StatHD v1.4.2-beta (Pre-Release Testing Build)
             > **Note:** Active **Beta / Pre-Release** build (`prerelease: true`).
 
-            #### Fixed in v1.4.1-beta:
-            - **No More Forced Re-Export After Compare:** After tapping **Compare Before & After**, the bottom action bar now switches to **`Re-Export`** + **`Share / Save`** so you can immediately share to WhatsApp Status or save to Gallery without re-encoding your video again.
+            #### New in v1.4.2-beta:
+            - **HD Photo Optimizer for WhatsApp Status (`HdPhotoOptimizer.kt`):**
+              - Unified `+` button & Gallery Share sheet now accept **both Videos and Photos**.
+              - Auto-fixes EXIF orientation, downscales smoothly to WhatsApp's HD photo sweet spot (`1600px` / `2048px`, never upscales), applies fast unsharp-mask edge sharpening & subtle vibrance pop, and saves crisp JPEG Q92 files to `Pictures/StatHD` or directly to WhatsApp Status.
+              - Supports live draggable **Original | Split | Enhanced** Before & After comparison for photos too!
+            - **No More Forced Re-Export After Compare:** Bottom bar switches to **`Re-Export`** + **`Share / Save`** once export finishes.
 
             **Direct Beta APK Download:**
-            Tap **`StatHD-v1.4.1-beta.apk`** under **Assets** below to install on your Android device.
-          files: StatHD-v1.4.1-beta.apk
+            Tap **`StatHD-v1.4.2-beta.apk`** under **Assets** below to install on your Android device.
+          files: StatHD-v1.4.2-beta.apk
           draft: false
           prerelease: true
