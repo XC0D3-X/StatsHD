@@ -33,32 +33,30 @@ jobs:
 
       - name: Prepare Beta APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.6-beta.apk
-          ls -lh StatHD-v1.4.6-beta.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.7-beta.apk
+          ls -lh StatHD-v1.4.7-beta.apk
 
       - name: Upload Beta APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-Beta-APK
-          path: StatHD-v1.4.6-beta.apk
+          path: StatHD-v1.4.7-beta.apk
           if-no-files-found: error
 
       - name: Publish Pre-Release Beta APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.6-beta
-          name: "StatHD v1.4.6-beta — 1-Tap PureStatus-Style Auto-Auth & Built-In 1080p Bot"
+          tag_name: v1.4.7-beta
+          name: "StatHD v1.4.7-beta — Fix Hardware VBR Overshoot (< 16 MB WhatsApp Cloud API Safe Ceiling)"
           body: |
-            ### StatHD v1.4.6-beta (1-Tap Built-In True 1080p Bot)
+            ### StatHD v1.4.7-beta (Safe <16 MB Cloud API Ceiling Hotfix)
             > **Note:** Active **Beta / Pre-Release** build (`prerelease: true`).
 
-            #### New in v1.4.6-beta:
-            - **Zero Link Copy-Paste:** Cloudflare Worker Bot URL & Meta Bot Number are now built directly into StatHD!
-            - **1-Tap Auto-Auth & Redirect:** Enter your WhatsApp number (auto-formats `01x` ➔ `601x`), tap **Register & Open WhatsApp Bot**, send `Hi StatHD` once, and tap **Send via HD Bot (True 1080p)** to receive untouched `1080p` videos straight in WhatsApp!
-            - **1080p Full HD • Max 15MB** is now the default preset.
+            #### Fixed in v1.4.7-beta:
+            - **Fixed Hardware VBR Overshoot (`> 16 MB` Error):** Added a safety margin to `1080p FHD` (`12.8 MB` target / `5.2 Mbps` cap) so even when Android's hardware VBR encoder overshoots by 10–15% on fast gaming footage, the final MP4 stays strictly below Meta WhatsApp Cloud API's `16.0 MB` hard limit!
 
             **Direct Beta APK Download:**
-            Tap **`StatHD-v1.4.6-beta.apk`** under **Assets** below to install on your Android device.
-          files: StatHD-v1.4.6-beta.apk
+            Tap **`StatHD-v1.4.7-beta.apk`** under **Assets** below to install on your Android device.
+          files: StatHD-v1.4.7-beta.apk
           draft: false
           prerelease: true

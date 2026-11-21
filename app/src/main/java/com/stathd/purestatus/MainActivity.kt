@@ -74,10 +74,10 @@ class MainActivity : AppCompatActivity() {
         val maxBitrateBps: Int,
         val maxFileSizeMb: Double
     ) {
-        CLIP_30S_1080P("1080p FHD • Max 15MB", 30_000L, 1920, 16_000_000, 15.2),
-        CLIP_30S_ULTRA("720p HD • Max 11MB", 30_000L, 1280, 12_000_000, 10.6),
-        CLIP_45S_HD("720p HD • 45s", 45_000L, 1280, 6_000_000, 10.6),
-        CLIP_60S_FULL("720p HD • 60s", 60_000L, 1280, 4_000_000, 10.6)
+        CLIP_30S_1080P("1080p FHD • Max 14MB", 30_000L, 1920, 5_200_000, 12.8),
+        CLIP_30S_ULTRA("720p HD • Max 10MB", 30_000L, 1280, 4_200_000, 9.6),
+        CLIP_45S_HD("720p HD • 45s", 45_000L, 1280, 2_200_000, 9.6),
+        CLIP_60S_FULL("720p HD • 60s", 60_000L, 1280, 1_500_000, 9.6)
     }
 
     enum class CompareMode {
@@ -1199,9 +1199,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (file.length() > 16L * 1024L * 1024L) {
+            val sizeMb = file.length() / (1024.0 * 1024.0)
             Toast.makeText(
                 this,
-                "File exceeds WhatsApp Cloud API 16 MB limit. Try a shorter clip.",
+                String.format(Locale.US, "File is %.2f MB (WhatsApp API max is 16.0 MB). Try 720p or shorten trim.", sizeMb),
                 Toast.LENGTH_LONG
             ).show()
             return
