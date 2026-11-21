@@ -3,6 +3,8 @@ package com.stathd.purestatus
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Rect
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
@@ -17,6 +19,9 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.SeekBar
@@ -31,7 +36,6 @@ import androidx.media3.common.Effect
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.effect.Contrast
 import androidx.media3.effect.Presentation
 import androidx.media3.effect.ScaleAndRotateTransformation
 import androidx.media3.transformer.Composition
@@ -58,42 +62,79 @@ import kotlin.math.roundToInt
 class MainActivity : AppCompatActivity() {
 
     enum class StatusPreset(
-        val label: String,
+        val pillLabel: String,
         val maxClipDurationMs: Long,
         val maxLongSidePx: Int,
         val maxBitrateBps: Int
     ) {
-        CLIP_30S_ULTRA("30s Wink Ultra HD (3.2 Mbps)", 30_000L, 1280, 3_200_000),
-        CLIP_45S_HD("45s Wink High Clarity (1.80 Mbps)", 45_000L, 1280, 1_800_000),
-        CLIP_60S_FULL("60s 1-Minute Status (1.38 Mbps)", 60_000L, 1280, 1_380_000)
+        CLIP_30S_ULTRA("720p HD • 30s", 30_000L, 1280, 3_200_000),
+        CLIP_45S_HD("720p HD • 45s", 45_000L, 1280, 1_800_000),
+        CLIP_60S_FULL("720p HD • 60s", 60_000L, 1280, 1_380_000)
     }
 
+    enum class CompareMode {
+        ORIGINAL, SPLIT, ENHANCED
+    }
+
+    // Top bar & triggers
+    private lateinit var btnMenu: ImageButton
+    private lateinit var btnPresetPicker: LinearLayout
+    private lateinit var tvPresetPill: TextView
+
+    // Main viewport
     private lateinit var videoPreview: VideoView
-    private lateinit var tvEmptyPreview: TextView
+    private lateinit var layoutSplitCompare: FrameLayout
+    private lateinit var ivAfterFrame: ImageView
+    private lateinit var ivBeforeFrame: ImageView
+    private lateinit var viewSplitLine: View
+    private lateinit var seekBarSplit: SeekBar
+    private lateinit var layoutEmptyState: LinearLayout
+    private lateinit var layoutCompareBar: LinearLayout
+    private lateinit var tabOriginal: TextView
+    private lateinit var tabSplit: TextView
+    private lateinit var tabEnhanced: TextView
     private lateinit var tvSourceSpecs: TextView
-    private lateinit var tvResolutionGuardInfo: TextView
-    private lateinit var btnPickVideo: MaterialButton
-    private lateinit var switchWinkRestore: SwitchMaterial
-    private lateinit var switchWinkMax: SwitchMaterial
-    private lateinit var cardPreset720: LinearLayout
-    private lateinit var cardPreset1080: LinearLayout
-    private lateinit var cardPreset60s: LinearLayout
+    private lateinit var fabPickVideo: ImageButton
+
+    // Timeline controls
+    private lateinit var btnPlayPause: ImageButton
+    private lateinit var tvCurrentTime: TextView
+    private lateinit var seekBarTimeline: SeekBar
+    private lateinit var tvTotalTime: TextView
     private lateinit var tvTrimWindow: TextView
     private lateinit var seekBarTrimStart: SeekBar
-    private lateinit var switchRotateVertical: SwitchMaterial
-    private lateinit var switchCrispBoost: SwitchMaterial
-    private lateinit var switchHdrToneMap: SwitchMaterial
-    private lateinit var switchMuteAudio: SwitchMaterial
-    private lateinit var btnOptimize: MaterialButton
+
+    // Bottom export controls
     private lateinit var layoutProgress: LinearLayout
     private lateinit var tvProgressStatus: TextView
     private lateinit var progressBar: ProgressBar
-    private lateinit var cardResult: LinearLayout
+    private lateinit var btnOptimize: MaterialButton
+
+    // Popups
+    private lateinit var overlayMenuPopup: FrameLayout
+    private lateinit var btnCloseMenu: ImageButton
+    private lateinit var switchWinkRestore: SwitchMaterial
+    private lateinit var switchWinkMax: SwitchMaterial
+    private lateinit var switchRotateVertical: SwitchMaterial
+    private lateinit var switchMuteAudio: SwitchMaterial
+    private lateinit var switchHdrToneMap: SwitchMaterial
+
+    private lateinit var overlayPresetPopup: FrameLayout
+    private lateinit var btnClosePreset: ImageButton
+    private lateinit var cardPreset30: LinearLayout
+    private lateinit var cardPreset45: LinearLayout
+    private lateinit var cardPreset60: LinearLayout
+
+    private lateinit var overlayResultPopup: FrameLayout
+    private lateinit var btnCloseResult: ImageButton
     private lateinit var tvResultSpecs: TextView
+    private lateinit var btnCompareNow: MaterialButton
     private lateinit var btnShareWhatsApp: MaterialButton
     private lateinit var btnSaveGallery: MaterialButton
 
+    // State
     private var selectedVideoUri: Uri? = null
+    private var outputVideoFile: File? = null
     private var sourceSizeBytes: Long = 0L
     private var sourceWidth: Int = 0
     private var sourceHeight: Int = 0
@@ -102,12 +143,31 @@ class MainActivity : AppCompatActivity() {
     private var trimStartMs: Long = 0L
     private var trimEndMs: Long = 0L
 
+    private var activeVideoDurationMs: Long = 0L
+    private var isVideoPlaying: Boolean = false
+    private var isScrubbingTimeline: Boolean = false
+    private var compareMode: CompareMode = CompareMode.ORIGINAL
     private var currentPreset: StatusPreset = StatusPreset.CLIP_30S_ULTRA
-    private var outputVideoFile: File? = null
     private var activeTransformer: Transformer? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val progressHolder = ProgressHolder()
+
+    private val timelineUpdateRunnable = object : Runnable {
+        override fun run() {
+            if (isVideoPlaying && !isScrubbingTimeline && compareMode != CompareMode.SPLIT && videoPreview.visibility == View.VISIBLE) {
+                try {
+                    val posMs = videoPreview.currentPosition.toLong()
+                    val durMs = max(1L, activeVideoDurationMs)
+                    val progress = ((posMs * 1000L) / durMs).toInt().coerceIn(0, 1000)
+                    seekBarTimeline.progress = progress
+                    tvCurrentTime.text = formatTimeMs(posMs)
+                } catch (_: Exception) {
+                }
+            }
+            mainHandler.postDelayed(this, 150L)
+        }
+    }
 
     private val pickVideoLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -124,44 +184,138 @@ class MainActivity : AppCompatActivity() {
         bindViews()
         setupListeners()
         handleIncomingShareIntent(intent)
+        mainHandler.post(timelineUpdateRunnable)
     }
 
     private fun bindViews() {
+        btnMenu = findViewById(R.id.btnMenu)
+        btnPresetPicker = findViewById(R.id.btnPresetPicker)
+        tvPresetPill = findViewById(R.id.tvPresetPill)
+
         videoPreview = findViewById(R.id.videoPreview)
-        tvEmptyPreview = findViewById(R.id.tvEmptyPreview)
+        layoutSplitCompare = findViewById(R.id.layoutSplitCompare)
+        ivAfterFrame = findViewById(R.id.ivAfterFrame)
+        ivBeforeFrame = findViewById(R.id.ivBeforeFrame)
+        viewSplitLine = findViewById(R.id.viewSplitLine)
+        seekBarSplit = findViewById(R.id.seekBarSplit)
+        layoutEmptyState = findViewById(R.id.layoutEmptyState)
+        layoutCompareBar = findViewById(R.id.layoutCompareBar)
+        tabOriginal = findViewById(R.id.tabOriginal)
+        tabSplit = findViewById(R.id.tabSplit)
+        tabEnhanced = findViewById(R.id.tabEnhanced)
         tvSourceSpecs = findViewById(R.id.tvSourceSpecs)
-        tvResolutionGuardInfo = findViewById(R.id.tvResolutionGuardInfo)
-        btnPickVideo = findViewById(R.id.btnPickVideo)
-        switchWinkRestore = findViewById(R.id.switchWinkRestore)
-        switchWinkMax = findViewById(R.id.switchWinkMax)
-        cardPreset720 = findViewById(R.id.cardPreset720)
-        cardPreset1080 = findViewById(R.id.cardPreset1080)
-        cardPreset60s = findViewById(R.id.cardPreset60s)
+        fabPickVideo = findViewById(R.id.fabPickVideo)
+
+        btnPlayPause = findViewById(R.id.btnPlayPause)
+        tvCurrentTime = findViewById(R.id.tvCurrentTime)
+        seekBarTimeline = findViewById(R.id.seekBarTimeline)
+        tvTotalTime = findViewById(R.id.tvTotalTime)
         tvTrimWindow = findViewById(R.id.tvTrimWindow)
         seekBarTrimStart = findViewById(R.id.seekBarTrimStart)
-        switchRotateVertical = findViewById(R.id.switchRotateVertical)
-        switchCrispBoost = findViewById(R.id.switchCrispBoost)
-        switchHdrToneMap = findViewById(R.id.switchHdrToneMap)
-        switchMuteAudio = findViewById(R.id.switchMuteAudio)
-        btnOptimize = findViewById(R.id.btnOptimize)
+
         layoutProgress = findViewById(R.id.layoutProgress)
         tvProgressStatus = findViewById(R.id.tvProgressStatus)
         progressBar = findViewById(R.id.progressBar)
-        cardResult = findViewById(R.id.cardResult)
+        btnOptimize = findViewById(R.id.btnOptimize)
+
+        overlayMenuPopup = findViewById(R.id.overlayMenuPopup)
+        btnCloseMenu = findViewById(R.id.btnCloseMenu)
+        switchWinkRestore = findViewById(R.id.switchWinkRestore)
+        switchWinkMax = findViewById(R.id.switchWinkMax)
+        switchRotateVertical = findViewById(R.id.switchRotateVertical)
+        switchMuteAudio = findViewById(R.id.switchMuteAudio)
+        switchHdrToneMap = findViewById(R.id.switchHdrToneMap)
+
+        overlayPresetPopup = findViewById(R.id.overlayPresetPopup)
+        btnClosePreset = findViewById(R.id.btnClosePreset)
+        cardPreset30 = findViewById(R.id.cardPreset30)
+        cardPreset45 = findViewById(R.id.cardPreset45)
+        cardPreset60 = findViewById(R.id.cardPreset60)
+
+        overlayResultPopup = findViewById(R.id.overlayResultPopup)
+        btnCloseResult = findViewById(R.id.btnCloseResult)
         tvResultSpecs = findViewById(R.id.tvResultSpecs)
+        btnCompareNow = findViewById(R.id.btnCompareNow)
         btnShareWhatsApp = findViewById(R.id.btnShareWhatsApp)
         btnSaveGallery = findViewById(R.id.btnSaveGallery)
     }
 
     private fun setupListeners() {
-        btnPickVideo.setOnClickListener {
+        // Hamburger Menu Popup
+        btnMenu.setOnClickListener { overlayMenuPopup.visibility = View.VISIBLE }
+        btnCloseMenu.setOnClickListener { overlayMenuPopup.visibility = View.GONE }
+        overlayMenuPopup.setOnClickListener { overlayMenuPopup.visibility = View.GONE }
+
+        switchWinkRestore.setOnCheckedChangeListener { _, isChecked ->
+            switchWinkMax.isEnabled = isChecked
+        }
+
+        // Preset Popup
+        btnPresetPicker.setOnClickListener { overlayPresetPopup.visibility = View.VISIBLE }
+        btnClosePreset.setOnClickListener { overlayPresetPopup.visibility = View.GONE }
+        overlayPresetPopup.setOnClickListener { overlayPresetPopup.visibility = View.GONE }
+
+        cardPreset30.setOnClickListener { selectPreset(StatusPreset.CLIP_30S_ULTRA) }
+        cardPreset45.setOnClickListener { selectPreset(StatusPreset.CLIP_45S_HD) }
+        cardPreset60.setOnClickListener { selectPreset(StatusPreset.CLIP_60S_FULL) }
+
+        // Bottom-right '+' FAB
+        fabPickVideo.setOnClickListener {
             pickVideoLauncher.launch("video/*")
         }
 
-        cardPreset720.setOnClickListener { selectPreset(StatusPreset.CLIP_30S_ULTRA) }
-        cardPreset1080.setOnClickListener { selectPreset(StatusPreset.CLIP_45S_HD) }
-        cardPreset60s.setOnClickListener { selectPreset(StatusPreset.CLIP_60S_FULL) }
+        // Before / Split / After tabs
+        tabOriginal.setOnClickListener { switchCompareMode(CompareMode.ORIGINAL) }
+        tabSplit.setOnClickListener { switchCompareMode(CompareMode.SPLIT) }
+        tabEnhanced.setOnClickListener { switchCompareMode(CompareMode.ENHANCED) }
 
+        // Split slider
+        seekBarSplit.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                applySplitClip(progress)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        // Play / Pause button
+        btnPlayPause.setOnClickListener {
+            if (compareMode == CompareMode.SPLIT) {
+                switchCompareMode(CompareMode.ENHANCED)
+                return@setOnClickListener
+            }
+            togglePlayback()
+        }
+
+        // Video Timeline Scrubber
+        seekBarTimeline.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (!fromUser) return
+                val targetMs = (activeVideoDurationMs * (progress / 1000.0)).toLong()
+                tvCurrentTime.text = formatTimeMs(targetMs)
+                if (compareMode != CompareMode.SPLIT && videoPreview.visibility == View.VISIBLE) {
+                    try {
+                        videoPreview.seekTo(targetMs.toInt())
+                    } catch (_: Exception) {
+                    }
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                isScrubbingTimeline = true
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                isScrubbingTimeline = false
+                if (compareMode == CompareMode.SPLIT) {
+                    val targetMs = (activeVideoDurationMs * ((seekBar?.progress ?: 0) / 1000.0)).toLong()
+                    loadSplitComparisonFrames(targetMs)
+                }
+            }
+        })
+
+        // Trim start slider
         seekBarTrimStart.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 updateTrimWindowFromSlider(progress, seekPreview = fromUser)
@@ -171,20 +325,18 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        switchWinkRestore.setOnCheckedChangeListener { _, isChecked ->
-            switchWinkMax.isEnabled = isChecked
-            updateResolutionGuardReadout()
-        }
-        switchWinkMax.setOnCheckedChangeListener { _, _ -> updateResolutionGuardReadout() }
-        switchRotateVertical.setOnCheckedChangeListener { _, _ -> updateResolutionGuardReadout() }
-        switchCrispBoost.setOnCheckedChangeListener { _, _ -> updateResolutionGuardReadout() }
-        switchHdrToneMap.setOnCheckedChangeListener { _, _ -> updateResolutionGuardReadout() }
-
+        // Export button
         btnOptimize.setOnClickListener {
-            val uri = selectedVideoUri
-            if (uri != null) {
-                executeOptimization(uri)
-            }
+            selectedVideoUri?.let { executeOptimization(it) }
+        }
+
+        // Result popup actions
+        btnCloseResult.setOnClickListener { overlayResultPopup.visibility = View.GONE }
+        overlayResultPopup.setOnClickListener { overlayResultPopup.visibility = View.GONE }
+
+        btnCompareNow.setOnClickListener {
+            overlayResultPopup.visibility = View.GONE
+            switchCompareMode(CompareMode.SPLIT)
         }
 
         btnShareWhatsApp.setOnClickListener {
@@ -212,33 +364,32 @@ class MainActivity : AppCompatActivity() {
 
     private fun selectPreset(preset: StatusPreset) {
         currentPreset = preset
-        cardPreset720.setBackgroundResource(
+        tvPresetPill.text = preset.pillLabel
+        cardPreset30.setBackgroundResource(
             if (preset == StatusPreset.CLIP_30S_ULTRA) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
         )
-        cardPreset1080.setBackgroundResource(
+        cardPreset45.setBackgroundResource(
             if (preset == StatusPreset.CLIP_45S_HD) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
         )
-        cardPreset60s.setBackgroundResource(
+        cardPreset60.setBackgroundResource(
             if (preset == StatusPreset.CLIP_60S_FULL) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
         )
+        overlayPresetPopup.visibility = View.GONE
         seekBarTrimStart.progress = 0
         updateTrimWindowFromSlider(0, seekPreview = true)
-        updateResolutionGuardReadout()
     }
 
     private fun onVideoSelected(uri: Uri) {
         selectedVideoUri = uri
-        cardResult.visibility = View.GONE
-        btnOptimize.isEnabled = true
-
-        tvEmptyPreview.visibility = View.GONE
+        outputVideoFile = null
+        compareMode = CompareMode.ORIGINAL
+        layoutCompareBar.visibility = View.GONE
+        layoutSplitCompare.visibility = View.GONE
+        layoutEmptyState.visibility = View.GONE
         videoPreview.visibility = View.VISIBLE
-        videoPreview.setVideoURI(uri)
-        videoPreview.setOnPreparedListener { mp ->
-            mp.isLooping = true
-            mp.setVolume(0f, 0f)
-            videoPreview.start()
-        }
+        btnOptimize.isEnabled = true
+        btnPlayPause.isEnabled = true
+        seekBarTimeline.isEnabled = true
 
         sourceSizeBytes = queryFileSize(uri)
         val retriever = MediaMetadataRetriever()
@@ -259,25 +410,14 @@ class MainActivity : AppCompatActivity() {
             }
 
             val sizeMb = sourceSizeBytes / (1024.0 * 1024.0)
-            val durationSec = sourceDurationMs / 1000.0
-            val bitrateMbps = sourceBitrateBps / 1_000_000.0
-
-            tvSourceSpecs.text = String.format(
-                Locale.US,
-                "Source: %dx%d | %.2f MB | %s (%.1fs) | %.2f Mbps",
-                sourceWidth,
-                sourceHeight,
-                sizeMb,
-                formatTimeMs(sourceDurationMs),
-                durationSec,
-                bitrateMbps
-            )
-        } catch (e: Exception) {
+            tvSourceSpecs.visibility = View.VISIBLE
+            tvSourceSpecs.text = String.format(Locale.US, "%dx%d • %.1f MB", sourceWidth, sourceHeight, sizeMb)
+        } catch (_: Exception) {
             sourceWidth = 0
             sourceHeight = 0
             sourceDurationMs = 0L
             sourceBitrateBps = 0L
-            tvSourceSpecs.text = "Video loaded • Ready for Wink GPU Ultra-HD Restoration"
+            tvSourceSpecs.visibility = View.GONE
         } finally {
             try {
                 retriever.release()
@@ -285,9 +425,159 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        activeVideoDurationMs = sourceDurationMs
+        tvTotalTime.text = formatTimeMs(sourceDurationMs)
+        tvCurrentTime.text = "0:00"
+        seekBarTimeline.progress = 0
         seekBarTrimStart.progress = 0
         updateTrimWindowFromSlider(0, seekPreview = false)
-        updateResolutionGuardReadout()
+
+        loadVideoIntoPlayer(uri = uri, filePath = null, seekToMs = 0L, autoPlay = true)
+    }
+
+    private fun loadVideoIntoPlayer(uri: Uri?, filePath: String?, seekToMs: Long, autoPlay: Boolean) {
+        layoutSplitCompare.visibility = View.GONE
+        videoPreview.visibility = View.VISIBLE
+
+        if (filePath != null) {
+            videoPreview.setVideoPath(filePath)
+        } else if (uri != null) {
+            videoPreview.setVideoURI(uri)
+        }
+
+        videoPreview.setOnPreparedListener { mp ->
+            mp.isLooping = true
+            activeVideoDurationMs = max(1L, mp.duration.toLong())
+            tvTotalTime.text = formatTimeMs(activeVideoDurationMs)
+            val safeSeek = seekToMs.coerceIn(0L, activeVideoDurationMs)
+            videoPreview.seekTo(safeSeek.toInt())
+            if (autoPlay) {
+                videoPreview.start()
+                isVideoPlaying = true
+                btnPlayPause.setImageResource(R.drawable.ic_pause)
+            } else {
+                videoPreview.pause()
+                isVideoPlaying = false
+                btnPlayPause.setImageResource(R.drawable.ic_play)
+            }
+        }
+    }
+
+    private fun togglePlayback() {
+        if (videoPreview.visibility != View.VISIBLE) return
+        if (isVideoPlaying) {
+            videoPreview.pause()
+            isVideoPlaying = false
+            btnPlayPause.setImageResource(R.drawable.ic_play)
+        } else {
+            videoPreview.start()
+            isVideoPlaying = true
+            btnPlayPause.setImageResource(R.drawable.ic_pause)
+        }
+    }
+
+    private fun switchCompareMode(mode: CompareMode) {
+        val outFile = outputVideoFile ?: return
+        val srcUri = selectedVideoUri ?: return
+
+        val currentPosMs = try {
+            if (compareMode != CompareMode.SPLIT && videoPreview.visibility == View.VISIBLE) {
+                videoPreview.currentPosition.toLong()
+            } else {
+                (activeVideoDurationMs * (seekBarTimeline.progress / 1000.0)).toLong()
+            }
+        } catch (_: Exception) {
+            0L
+        }
+
+        compareMode = mode
+        updateCompareTabStyles(mode)
+
+        when (mode) {
+            CompareMode.ORIGINAL -> {
+                val origSeek = (trimStartMs + currentPosMs).coerceAtMost(max(0L, sourceDurationMs - 100L))
+                loadVideoIntoPlayer(uri = srcUri, filePath = null, seekToMs = origSeek, autoPlay = true)
+            }
+            CompareMode.ENHANCED -> {
+                loadVideoIntoPlayer(uri = null, filePath = outFile.absolutePath, seekToMs = currentPosMs, autoPlay = true)
+            }
+            CompareMode.SPLIT -> {
+                if (isVideoPlaying) {
+                    videoPreview.pause()
+                    isVideoPlaying = false
+                    btnPlayPause.setImageResource(R.drawable.ic_play)
+                }
+                videoPreview.visibility = View.GONE
+                layoutSplitCompare.visibility = View.VISIBLE
+                loadSplitComparisonFrames(currentPosMs)
+            }
+        }
+    }
+
+    private fun updateCompareTabStyles(mode: CompareMode) {
+        val tabs = listOf(
+            tabOriginal to CompareMode.ORIGINAL,
+            tabSplit to CompareMode.SPLIT,
+            tabEnhanced to CompareMode.ENHANCED
+        )
+        for ((tv, m) in tabs) {
+            if (m == mode) {
+                tv.setBackgroundResource(R.drawable.bg_pill_active)
+                tv.setTextColor(0xFFFFFFFF.toInt())
+            } else {
+                tv.background = null
+                tv.setTextColor(0xFF94A3B8.toInt())
+            }
+        }
+    }
+
+    private fun loadSplitComparisonFrames(relativePosMs: Long) {
+        val srcUri = selectedVideoUri ?: return
+        val outFile = outputVideoFile ?: return
+
+        val origTimeUs = (trimStartMs + relativePosMs) * 1000L
+        val enhTimeUs = relativePosMs * 1000L
+
+        thread(start = true) {
+            var beforeBmp: Bitmap? = null
+            var afterBmp: Bitmap? = null
+            val retOrig = MediaMetadataRetriever()
+            val retEnh = MediaMetadataRetriever()
+            try {
+                retOrig.setDataSource(this, srcUri)
+                beforeBmp = retOrig.getFrameAtTime(origTimeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                    ?: retOrig.getFrameAtTime(origTimeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+            } catch (_: Exception) {
+            } finally {
+                try { retOrig.release() } catch (_: Exception) {}
+            }
+
+            try {
+                retEnh.setDataSource(outFile.absolutePath)
+                afterBmp = retEnh.getFrameAtTime(enhTimeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                    ?: retEnh.getFrameAtTime(enhTimeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+            } catch (_: Exception) {
+            } finally {
+                try { retEnh.release() } catch (_: Exception) {}
+            }
+
+            mainHandler.post {
+                if (beforeBmp != null) ivBeforeFrame.setImageBitmap(beforeBmp)
+                if (afterBmp != null) ivAfterFrame.setImageBitmap(afterBmp)
+                layoutSplitCompare.post {
+                    applySplitClip(seekBarSplit.progress)
+                }
+            }
+        }
+    }
+
+    private fun applySplitClip(progressPercent: Int) {
+        val w = layoutSplitCompare.width
+        val h = layoutSplitCompare.height
+        if (w <= 0 || h <= 0) return
+        val splitX = (w * (progressPercent / 100.0)).toInt().coerceIn(0, w)
+        ivBeforeFrame.clipBounds = Rect(0, 0, splitX, h)
+        viewSplitLine.translationX = splitX.toFloat()
     }
 
     private fun updateTrimWindowFromSlider(progress: Int, seekPreview: Boolean) {
@@ -297,7 +587,8 @@ class MainActivity : AppCompatActivity() {
         if (totalMs <= 0L) {
             trimStartMs = 0L
             trimEndMs = maxClipMs
-            tvTrimWindow.text = "Clip Window: Auto-trim to max ${maxClipMs / 1000}s"
+            seekBarTrimStart.isEnabled = false
+            tvTrimWindow.text = "Trim: 0:00 – ${formatTimeMs(maxClipMs)}"
             return
         }
 
@@ -305,7 +596,7 @@ class MainActivity : AppCompatActivity() {
             trimStartMs = 0L
             trimEndMs = totalMs
             seekBarTrimStart.isEnabled = false
-            tvTrimWindow.text = "Clip Window: Full Video (0:00 ➔ ${formatTimeMs(totalMs)}) • Fits in 1 Status"
+            tvTrimWindow.text = "Trim: 0:00 – ${formatTimeMs(totalMs)} (Full)"
         } else {
             seekBarTrimStart.isEnabled = true
             val maxStartMs = totalMs - maxClipMs
@@ -313,19 +604,17 @@ class MainActivity : AppCompatActivity() {
             trimEndMs = min(totalMs, trimStartMs + maxClipMs)
             tvTrimWindow.text = String.format(
                 Locale.US,
-                "Clip Window: %s ➔ %s (%ds clip • Slide to pick highlight)",
+                "Trim: %s – %s",
                 formatTimeMs(trimStartMs),
-                formatTimeMs(trimEndMs),
-                (trimEndMs - trimStartMs) / 1000L
+                formatTimeMs(trimEndMs)
             )
-            if (seekPreview && videoPreview.visibility == View.VISIBLE) {
+            if (seekPreview && videoPreview.visibility == View.VISIBLE && compareMode == CompareMode.ORIGINAL) {
                 try {
                     videoPreview.seekTo(trimStartMs.toInt())
                 } catch (_: Exception) {
                 }
             }
         }
-        updateResolutionGuardReadout()
     }
 
     private fun canUseLosslessDirectCopy(): Boolean {
@@ -333,7 +622,7 @@ class MainActivity : AppCompatActivity() {
         if (sourceWidth <= 0 || sourceHeight <= 0 || sourceDurationMs <= 0L) return false
         val longSide = max(sourceWidth, sourceHeight)
         if (longSide > currentPreset.maxLongSidePx) return false
-        if (switchRotateVertical.isChecked || switchCrispBoost.isChecked || switchHdrToneMap.isChecked) return false
+        if (switchRotateVertical.isChecked || switchHdrToneMap.isChecked) return false
 
         val clipDurMs = max(1000L, trimEndMs - trimStartMs)
         val estimatedSliceBytes = if (sourceSizeBytes > 0L) {
@@ -362,52 +651,6 @@ class MainActivity : AppCompatActivity() {
         return Pair(targetW, targetH)
     }
 
-    private fun updateResolutionGuardReadout() {
-        if (sourceWidth <= 0 || sourceHeight <= 0) {
-            tvResolutionGuardInfo.text = "Engine Mode: Wink GPU Restoration + 1280px Guard"
-            return
-        }
-
-        if (canUseLosslessDirectCopy()) {
-            tvResolutionGuardInfo.text = String.format(
-                Locale.US,
-                "★ 100%% LOSSLESS STREAM COPY: %dx%d • Zero Re-Encoding",
-                sourceWidth,
-                sourceHeight
-            )
-            return
-        }
-
-        val effW = if (switchRotateVertical.isChecked) sourceHeight else sourceWidth
-        val effH = if (switchRotateVertical.isChecked) sourceWidth else sourceHeight
-        val scaled = computeSafeOutputDimensions()
-        val winkMode = if (switchWinkRestore.isChecked) {
-            if (switchWinkMax.isChecked) "✨ Wink MAX GPU Shader" else "✨ Wink Balanced GPU Shader"
-        } else {
-            "Standard H.264"
-        }
-
-        if (scaled == null) {
-            tvResolutionGuardInfo.text = String.format(
-                Locale.US,
-                "✓ %s | %dx%d (1:1 Native Pixels • Zero Upscaling)",
-                winkMode,
-                effW,
-                effH
-            )
-        } else {
-            tvResolutionGuardInfo.text = String.format(
-                Locale.US,
-                "✓ %s | Scaling %dx%d ➔ %dx%d",
-                winkMode,
-                effW,
-                effH,
-                scaled.first,
-                scaled.second
-            )
-        }
-    }
-
     private fun executeOptimization(inputUri: Uri) {
         val outDir = File(cacheDir, "stathd_exports").apply { mkdirs() }
         val outFile = File(outDir, "StatHD_${System.currentTimeMillis()}.mp4")
@@ -423,13 +666,7 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("WrongConstant")
     private fun startLosslessStreamCut(inputUri: Uri, outFile: File) {
-        btnOptimize.isEnabled = false
-        btnPickVideo.isEnabled = false
-        cardResult.visibility = View.GONE
-        layoutProgress.visibility = View.VISIBLE
-        progressBar.progress = 15
-        tvProgressStatus.text = "Running 100% Lossless Direct Stream Copy (Zero Re-Encoding)..."
-
+        setBusyUi(true, "Trimming losslessly...")
         val startUs = trimStartMs * 1000L
         val endUs = if (trimEndMs > trimStartMs) trimEndMs * 1000L else Long.MAX_VALUE
         val removeAudio = switchMuteAudio.isChecked
@@ -440,7 +677,6 @@ class MainActivity : AppCompatActivity() {
             try {
                 extractor = MediaExtractor()
                 extractor.setDataSource(this, inputUri, null)
-
                 muxer = MediaMuxer(outFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
 
                 val trackMap = HashMap<Int, Int>()
@@ -451,28 +687,20 @@ class MainActivity : AppCompatActivity() {
                     val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
                     if (mime.startsWith("video/")) {
                         extractor.selectTrack(i)
-                        val dstIndex = muxer.addTrack(format)
-                        trackMap[i] = dstIndex
+                        trackMap[i] = muxer.addTrack(format)
                         videoTrackIndex = i
                         if (format.containsKey(MediaFormat.KEY_ROTATION)) {
                             muxer.setOrientationHint(format.getInteger(MediaFormat.KEY_ROTATION))
                         }
                     } else if (mime.startsWith("audio/") && !removeAudio) {
                         extractor.selectTrack(i)
-                        val dstIndex = muxer.addTrack(format)
-                        trackMap[i] = dstIndex
+                        trackMap[i] = muxer.addTrack(format)
                     }
                 }
 
-                if (videoTrackIndex == -1) {
-                    throw IllegalStateException("No video track found")
-                }
-
+                if (videoTrackIndex == -1) throw IllegalStateException("No video track")
                 muxer.start()
-
-                if (startUs > 0L) {
-                    extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
-                }
+                if (startUs > 0L) extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
 
                 val buffer = ByteBuffer.allocate(2 * 1024 * 1024)
                 val bufferInfo = MediaCodec.BufferInfo()
@@ -481,12 +709,10 @@ class MainActivity : AppCompatActivity() {
                     bufferInfo.offset = 0
                     bufferInfo.size = extractor.readSampleData(buffer, 0)
                     if (bufferInfo.size < 0) break
-
                     val sampleTimeUs = extractor.sampleTime
                     if (sampleTimeUs > endUs) break
 
-                    val trackIndex = extractor.sampleTrackIndex
-                    val dstTrack = trackMap[trackIndex]
+                    val dstTrack = trackMap[extractor.sampleTrackIndex]
                     if (dstTrack != null && sampleTimeUs >= startUs - 500_000L) {
                         bufferInfo.presentationTimeUs = max(0L, sampleTimeUs - startUs)
                         bufferInfo.flags = extractor.sampleFlags
@@ -494,54 +720,20 @@ class MainActivity : AppCompatActivity() {
                     }
                     extractor.advance()
                 }
-
                 muxer.stop()
                 mainHandler.post {
-                    onLosslessCopySuccess(outFile)
+                    onExportFinished(outFile, sourceBitrateBps.toInt(), null)
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 mainHandler.post {
                     if (outFile.exists()) outFile.delete()
                     startStatHdTranscode(inputUri, outFile, allowHdrToneMap = switchHdrToneMap.isChecked)
                 }
             } finally {
-                try {
-                    extractor?.release()
-                } catch (_: Exception) {
-                }
-                try {
-                    muxer?.release()
-                } catch (_: Exception) {
-                }
+                try { extractor?.release() } catch (_: Exception) {}
+                try { muxer?.release() } catch (_: Exception) {}
             }
         }
-    }
-
-    private fun onLosslessCopySuccess(outFile: File) {
-        btnOptimize.isEnabled = true
-        btnPickVideo.isEnabled = true
-        progressBar.progress = 100
-        layoutProgress.visibility = View.GONE
-        cardResult.visibility = View.VISIBLE
-
-        val newSizeBytes = outFile.length()
-        val newSizeMb = newSizeBytes / (1024.0 * 1024.0)
-        val oldSizeMb = sourceSizeBytes / (1024.0 * 1024.0)
-
-        tvResultSpecs.text = String.format(
-            Locale.US,
-            "★ MODE: 100%% LOSSLESS STREAM COPY (0%% Pixel Loss)\nOutput: %dx%d | Size: %.2f MB (Source: %.2f MB)\nClip: %s ➔ %s | Status: <11 MB WA DIRECT PASSTHROUGH",
-            sourceWidth,
-            sourceHeight,
-            newSizeMb,
-            oldSizeMb,
-            formatTimeMs(trimStartMs),
-            formatTimeMs(trimEndMs)
-        )
-
-        videoPreview.setVideoPath(outFile.absolutePath)
-        videoPreview.start()
-        Toast.makeText(this, "100% Lossless Cut Complete!", Toast.LENGTH_LONG).show()
     }
 
     private fun computeSafeVideoBitrateBps(): Int {
@@ -552,29 +744,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         val audioBitrateBps = if (switchMuteAudio.isChecked) 0 else 128_000
-        // Keep output strictly <= 10.2 MB so WhatsApp Status never re-encodes the file
         val maxTotalBits = 10.2 * 1024.0 * 1024.0 * 8.0
         val maxSafeVideoBps = ((maxTotalBits / clipDurationSec) - audioBitrateBps).toInt()
-
         return min(currentPreset.maxBitrateBps, max(900_000, maxSafeVideoBps))
     }
 
     private fun startStatHdTranscode(inputUri: Uri, outFile: File, allowHdrToneMap: Boolean) {
-        btnOptimize.isEnabled = false
-        btnPickVideo.isEnabled = false
-        cardResult.visibility = View.GONE
-        layoutProgress.visibility = View.VISIBLE
-        progressBar.progress = 0
-
         val targetBitrateBps = computeSafeVideoBitrateBps()
         val targetMbps = targetBitrateBps / 1_000_000.0
-        val winkActive = switchWinkRestore.isChecked
-        tvProgressStatus.text = String.format(
-            Locale.US,
-            "Initializing %s (%.2f Mbps)...",
-            if (winkActive) "Wink GPU Ultra-HD Shader" else "H.264 High-Clarity Encoder",
-            targetMbps
-        )
+        setBusyUi(true, String.format(Locale.US, "Enhancing video (%.1f Mbps)... 0%%", targetMbps))
 
         val videoEffects = mutableListOf<Effect>()
         if (switchRotateVertical.isChecked) {
@@ -596,42 +774,25 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // Add Wink GPU Ultra-HD Restoration Shader (Dual-Radius 3x3 Fine + 7x7 Wide Clarity Unsharp)
-        if (winkActive) {
+        if (switchWinkRestore.isChecked) {
             if (switchWinkMax.isChecked) {
-                videoEffects.add(
-                    WinkUltraHdEffect(
-                        sharpnessStrength = 1.05f,
-                        denoiseStrength = 0.0f,
-                        vibranceBoost = 0.12f
-                    )
-                )
+                videoEffects.add(WinkUltraHdEffect(sharpnessStrength = 1.05f, denoiseStrength = 0.0f, vibranceBoost = 0.12f))
             } else {
-                videoEffects.add(
-                    WinkUltraHdEffect(
-                        sharpnessStrength = 0.72f,
-                        denoiseStrength = 0.0f,
-                        vibranceBoost = 0.08f
-                    )
-                )
+                videoEffects.add(WinkUltraHdEffect(sharpnessStrength = 0.72f, denoiseStrength = 0.0f, vibranceBoost = 0.08f))
             }
-        }
-
-        if (switchCrispBoost.isChecked) {
-            videoEffects.add(Contrast(0.05f))
         }
 
         val mediaItemBuilder = MediaItem.Builder().setUri(inputUri)
         if (sourceDurationMs > 0L && (trimStartMs > 0L || trimEndMs < sourceDurationMs)) {
-            val clipConfig = MediaItem.ClippingConfiguration.Builder()
-                .setStartPositionMs(trimStartMs)
-                .setEndPositionMs(trimEndMs)
-                .build()
-            mediaItemBuilder.setClippingConfiguration(clipConfig)
+            mediaItemBuilder.setClippingConfiguration(
+                MediaItem.ClippingConfiguration.Builder()
+                    .setStartPositionMs(trimStartMs)
+                    .setEndPositionMs(trimEndMs)
+                    .build()
+            )
         }
-        val mediaItem = mediaItemBuilder.build()
 
-        val editedMediaItem = EditedMediaItem.Builder(mediaItem)
+        val editedMediaItem = EditedMediaItem.Builder(mediaItemBuilder.build())
             .setEffects(Effects(emptyList(), videoEffects))
             .setRemoveAudio(switchMuteAudio.isChecked)
             .build()
@@ -640,7 +801,6 @@ class MainActivity : AppCompatActivity() {
         if (allowHdrToneMap && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             compositionBuilder.setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_MEDIACODEC)
         }
-        val composition = compositionBuilder.build()
 
         val videoEncoderSettings = VideoEncoderSettings.Builder()
             .setBitrate(targetBitrateBps)
@@ -657,8 +817,7 @@ class MainActivity : AppCompatActivity() {
             .setEncoderFactory(encoderFactory)
             .addListener(object : Transformer.Listener {
                 override fun onCompleted(composition: Composition, exportResult: ExportResult) {
-                    mainHandler.removeCallbacksAndMessages(null)
-                    onTranscodeSuccess(outFile, targetBitrateBps, targetDims)
+                    onExportFinished(outFile, targetBitrateBps, targetDims)
                 }
 
                 override fun onError(
@@ -666,36 +825,34 @@ class MainActivity : AppCompatActivity() {
                     exportResult: ExportResult,
                     exportException: ExportException
                 ) {
-                    mainHandler.removeCallbacksAndMessages(null)
                     if (allowHdrToneMap) {
                         startStatHdTranscode(inputUri, outFile, allowHdrToneMap = false)
                         return
                     }
-                    onTranscodeError(exportException)
+                    setBusyUi(false, "")
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Export failed: ${exportException.localizedMessage ?: "Please try again"}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             })
             .build()
 
         activeTransformer = transformer
-        transformer.start(composition, outFile.absolutePath)
-        pollTransformerProgress(transformer, targetMbps, winkActive)
+        transformer.start(compositionBuilder.build(), outFile.absolutePath)
+        pollTransformerProgress(transformer, targetMbps)
     }
 
-    private fun pollTransformerProgress(transformer: Transformer, targetMbps: Double, winkActive: Boolean) {
-        val label = if (winkActive) "Wink GPU De-Block + CAS Sharpen" else "H.264 1s-Keyframe"
+    private fun pollTransformerProgress(transformer: Transformer, targetMbps: Double) {
         val runnable = object : Runnable {
             override fun run() {
+                if (activeTransformer !== transformer) return
                 val state = transformer.getProgress(progressHolder)
                 if (state == Transformer.PROGRESS_STATE_AVAILABLE) {
                     val pct = progressHolder.progress
                     progressBar.progress = pct
-                    tvProgressStatus.text = String.format(
-                        Locale.US,
-                        "Rendering %s (%.2f Mbps)... %d%%",
-                        label,
-                        targetMbps,
-                        pct
-                    )
+                    tvProgressStatus.text = String.format(Locale.US, "Enhancing video (%.1f Mbps)... %d%%", targetMbps, pct)
                 }
                 if (state != Transformer.PROGRESS_STATE_NOT_STARTED) {
                     mainHandler.postDelayed(this, 150L)
@@ -705,61 +862,39 @@ class MainActivity : AppCompatActivity() {
         mainHandler.post(runnable)
     }
 
-    private fun onTranscodeSuccess(outFile: File, targetBitrateBps: Int, targetDims: Pair<Int, Int>?) {
-        btnOptimize.isEnabled = true
-        btnPickVideo.isEnabled = true
-        progressBar.progress = 100
-        layoutProgress.visibility = View.GONE
-        cardResult.visibility = View.VISIBLE
+    private fun setBusyUi(busy: Boolean, message: String) {
+        btnOptimize.isEnabled = !busy
+        fabPickVideo.isEnabled = !busy
+        layoutProgress.visibility = if (busy) View.VISIBLE else View.GONE
+        if (busy) {
+            progressBar.progress = 0
+            tvProgressStatus.text = message
+        }
+    }
 
-        val newSizeBytes = outFile.length()
-        val newSizeMb = newSizeBytes / (1024.0 * 1024.0)
-        val oldSizeMb = sourceSizeBytes / (1024.0 * 1024.0)
-        val targetMbps = targetBitrateBps / 1_000_000.0
+    private fun onExportFinished(outFile: File, targetBitrateBps: Int, targetDims: Pair<Int, Int>?) {
+        activeTransformer = null
+        setBusyUi(false, "")
 
+        val newSizeMb = outFile.length() / (1024.0 * 1024.0)
         val effW = if (switchRotateVertical.isChecked) sourceHeight else sourceWidth
         val effH = if (switchRotateVertical.isChecked) sourceWidth else sourceHeight
         val outW = targetDims?.first ?: effW
         val outH = targetDims?.second ?: effH
-        val resLabel = if (switchRotateVertical.isChecked) {
-            "${outW}x${outH} (90° Full-Screen)"
-        } else if (targetDims == null) {
-            "${outW}x${outH} (1:1 Native)"
-        } else {
-            "${outW}x${outH}"
-        }
-        val winkBadge = if (switchWinkRestore.isChecked) {
-            if (switchWinkMax.isChecked) "✨ Wink MAX GPU Restored" else "✨ Wink Balanced Restored"
-        } else {
-            "Standard H.264"
-        }
+        val targetMbps = targetBitrateBps / 1_000_000.0
 
         tvResultSpecs.text = String.format(
             Locale.US,
-            "Engine: %s\nOutput: %s | Size: %.2f MB (Source: %.2f MB)\nClip: %s ➔ %s | Bitrate: %.2f Mbps (<11 MB WA Bypass)",
-            winkBadge,
-            resLabel,
+            "%dx%d • %.2f MB • %.1f Mbps H.264",
+            outW,
+            outH,
             newSizeMb,
-            oldSizeMb,
-            formatTimeMs(trimStartMs),
-            formatTimeMs(trimEndMs),
             targetMbps
         )
 
-        videoPreview.setVideoPath(outFile.absolutePath)
-        videoPreview.start()
-        Toast.makeText(this, "Wink GPU Ultra-HD Restoration Complete!", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun onTranscodeError(error: ExportException) {
-        btnOptimize.isEnabled = true
-        btnPickVideo.isEnabled = true
-        layoutProgress.visibility = View.GONE
-        Toast.makeText(
-            this,
-            "Encoding error: ${error.localizedMessage ?: "Please try again"}",
-            Toast.LENGTH_LONG
-        ).show()
+        layoutCompareBar.visibility = View.VISIBLE
+        switchCompareMode(CompareMode.ENHANCED)
+        overlayResultPopup.visibility = View.VISIBLE
     }
 
     private fun shareToWhatsApp(file: File) {
@@ -768,14 +903,12 @@ class MainActivity : AppCompatActivity() {
             "${applicationContext.packageName}.fileprovider",
             file
         )
-
         val waIntent = Intent(Intent.ACTION_SEND).apply {
             type = "video/mp4"
             putExtra(Intent.EXTRA_STREAM, contentUri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             setPackage("com.whatsapp")
         }
-
         try {
             startActivity(waIntent)
         } catch (_: Exception) {
@@ -785,7 +918,7 @@ class MainActivity : AppCompatActivity() {
                     putExtra(Intent.EXTRA_STREAM, contentUri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 },
-                "Share StatHD Video to WhatsApp Status"
+                "Share video to WhatsApp"
             )
             startActivity(chooser)
         }
@@ -802,38 +935,25 @@ class MainActivity : AppCompatActivity() {
                     put(MediaStore.Video.Media.IS_PENDING, 1)
                 }
             }
-
-            val resolver = contentResolver
             val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
             } else {
                 MediaStore.Video.Media.EXTERNAL_CONTENT_URI
             }
-
-            val itemUri = resolver.insert(collection, values)
+            val itemUri = contentResolver.insert(collection, values)
             if (itemUri != null) {
-                resolver.openOutputStream(itemUri)?.use { outStream ->
-                    file.inputStream().use { inStream ->
-                        inStream.copyTo(outStream)
-                    }
+                contentResolver.openOutputStream(itemUri)?.use { out ->
+                    file.inputStream().use { input -> input.copyTo(out) }
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     values.clear()
                     values.put(MediaStore.Video.Media.IS_PENDING, 0)
-                    resolver.update(itemUri, values, null, null)
+                    contentResolver.update(itemUri, values, null, null)
                 }
-                Toast.makeText(
-                    this,
-                    "Saved to Gallery: Movies/StatHD/$fileName",
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(this, "Saved to Movies/StatHD/$fileName", Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
-            Toast.makeText(
-                this,
-                "Failed to save to Gallery: ${e.localizedMessage}",
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(this, "Failed to save: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -841,9 +961,7 @@ class MainActivity : AppCompatActivity() {
         return try {
             contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                if (sizeIndex != -1 && cursor.moveToFirst()) {
-                    cursor.getLong(sizeIndex)
-                } else 0L
+                if (sizeIndex != -1 && cursor.moveToFirst()) cursor.getLong(sizeIndex) else 0L
             } ?: 0L
         } catch (_: Exception) {
             0L

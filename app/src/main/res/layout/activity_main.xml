@@ -1,196 +1,592 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_dark"
-    android:fillViewport="true">
+    android:background="@color/bg_dark">
 
+    <!-- MAIN ZERO-SCROLL STUDIO CONTAINER -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="18dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <!-- TOP HEADER -->
+        <!-- 1. TOP APP BAR -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
+            android:background="@color/surface_bar"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingBottom="6dp">
+            android:paddingHorizontal="12dp">
+
+            <ImageButton
+                android:id="@+id/btnMenu"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Settings Menu"
+                android:padding="8dp"
+                android:src="@drawable/ic_menu" />
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:text="StatHD"
                 android:textColor="@color/text_primary"
-                android:textSize="28sp"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <!-- Preset Selector Pill -->
+            <LinearLayout
+                android:id="@+id/btnPresetPicker"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_badge_green"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="4dp"
-                android:text="WINK GPU ENGINE v1.4 BETA"
-                android:textColor="@color/emerald_light"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+                android:layout_height="34dp"
+                android:background="@drawable/bg_pill_dark"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingBottom="16dp"
-            android:text="Wink-Style GPU Quality Restoration (Bilateral De-Block + CAS Edge Reconstruction) • Smart 1280px Guard • WhatsApp HD Bypass."
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
-
-        <!-- STEP 1: VIDEO PICKER & TELEMETRY -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1. SOURCE MASTER VIDEO"
-                android:textColor="@color/emerald_light"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="190dp"
-                android:layout_marginTop="10dp"
-                android:background="#06080C">
-
-                <VideoView
-                    android:id="@+id/videoPreview"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center"
-                    android:visibility="gone" />
+                <ImageView
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:src="@drawable/ic_video_badge" />
 
                 <TextView
-                    android:id="@+id/tvEmptyPreview"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:padding="20dp"
-                    android:text="No video selected.\nTap the button below or Share any video directly from your Gallery to StatHD."
-                    android:textAlignment="center"
-                    android:textColor="@color/text_muted"
-                    android:textSize="13sp" />
-            </FrameLayout>
+                    android:id="@+id/tvPresetPill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="720p HD • 30s"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvSourceSpecs"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:fontFamily="monospace"
-                android:text="Resolution: - | Size: - | Duration: -"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/tvResolutionGuardInfo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:fontFamily="monospace"
-                android:text="Engine Mode: Waiting for video..."
-                android:textColor="@color/emerald_light"
-                android:textSize="11sp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnPickVideo"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="12dp"
-                android:text="SELECT VIDEO FROM GALLERY"
-                android:textColor="#04130D"
-                android:textStyle="bold"
-                app:backgroundTint="@color/emerald_primary"
-                app:cornerRadius="10dp" />
+                <ImageView
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:layout_marginStart="4dp"
+                    android:src="@drawable/ic_chevron_down" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- STEP 2: WINK GPU ULTRA-HD RESTORATION -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/border_slate" />
+
+        <!-- 2. FULL-HEIGHT VIDEO VIEWPORT (NO SCROLL) -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#090A0D">
+
+            <!-- Live Video Player (Original or Enhanced) -->
+            <VideoView
+                android:id="@+id/videoPreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+
+            <!-- Split-Screen Frame Comparison Container (Visible in Split Mode) -->
+            <FrameLayout
+                android:id="@+id/layoutSplitCompare"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/ivAfterFrame"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="fitCenter" />
+
+                <ImageView
+                    android:id="@+id/ivBeforeFrame"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="fitCenter" />
+
+                <!-- Thin White Vertical Split Divider -->
+                <View
+                    android:id="@+id/viewSplitLine"
+                    android:layout_width="2dp"
+                    android:layout_height="match_parent"
+                    android:background="#CCFFFFFF" />
+
+                <!-- Draggable Split Slider (Full-Width Touch Target) -->
+                <SeekBar
+                    android:id="@+id/seekBarSplit"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center_vertical"
+                    android:max="100"
+                    android:progress="50"
+                    android:progressDrawable="@android:color/transparent"
+                    android:splitTrack="false"
+                    android:thumbTint="#FFFFFF" />
+
+                <!-- Subtle Corner Labels -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|start"
+                    android:layout_margin="12dp"
+                    android:background="#99000000"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:text="Original"
+                    android:textColor="#E2E8F0"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|end"
+                    android:layout_marginEnd="78dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="#992563EB"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:text="Enhanced"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp" />
+            </FrameLayout>
+
+            <!-- Empty State (Clean Minimal Prompt) -->
+            <LinearLayout
+                android:id="@+id/layoutEmptyState"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="28dp">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:alpha="0.55"
+                    android:src="@drawable/ic_video_badge" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Tap + to select a video"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- Top Segmented Before / After Bar (Appears once Enhanced video is ready) -->
+            <LinearLayout
+                android:id="@+id/layoutCompareBar"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:layout_gravity="top|center_horizontal"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_pill_dark"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="3dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tabOriginal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingHorizontal="14dp"
+                    android:text="Original"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tabSplit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingHorizontal="14dp"
+                    android:text="Split"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tabEnhanced"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_pill_active"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingHorizontal="14dp"
+                    android:text="Enhanced"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Subtle Top-Left File Info Chip -->
+            <TextView
+                android:id="@+id/tvSourceSpecs"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_marginStart="12dp"
+                android:layout_marginTop="12dp"
+                android:background="#8814171C"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text=""
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:visibility="gone" />
+
+            <!-- Floating '+' Add Video Button (Bottom Right) -->
+            <ImageButton
+                android:id="@+id/fabPickVideo"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="16dp"
+                android:background="@drawable/bg_fab_blue"
+                android:contentDescription="Add Video"
+                android:elevation="6dp"
+                android:padding="15dp"
+                android:src="@drawable/ic_add" />
+        </FrameLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/border_slate" />
+
+        <!-- 3. INTERACTIVE VIDEO TIMELINE & TRIM CONTROLLER -->
+        <LinearLayout
+            android:id="@+id/layoutTimelineBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface_bar"
+            android:orientation="vertical"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp">
+
+            <!-- Row 1: Play/Pause + Playback Scrubber -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/btnPlayPause"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_preset_unselected"
+                    android:contentDescription="Play or Pause"
+                    android:enabled="false"
+                    android:padding="7dp"
+                    android:src="@drawable/ic_play" />
+
+                <TextView
+                    android:id="@+id/tvCurrentTime"
+                    android:layout_width="38dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="0:00"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp" />
+
+                <SeekBar
+                    android:id="@+id/seekBarTimeline"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:enabled="false"
+                    android:max="1000"
+                    android:progress="0"
+                    android:progressTint="@color/accent_blue_light"
+                    android:thumbTint="#FFFFFF" />
+
+                <TextView
+                    android:id="@+id/tvTotalTime"
+                    android:layout_width="38dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:text="0:00"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Row 2: Trim Start Offset Control -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:src="@drawable/ic_scissors" />
+
+                <TextView
+                    android:id="@+id/tvTrimWindow"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:text="Trim: 0:00 – 0:30"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <SeekBar
+                    android:id="@+id/seekBarTrimStart"
+                    android:layout_width="130dp"
+                    android:layout_height="wrap_content"
+                    android:enabled="false"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressTint="@color/text_secondary"
+                    android:thumbTint="@color/text_primary" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 4. BOTTOM EXPORT ACTION BAR -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="@drawable/bg_card"
+            android:background="@color/surface_bar"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingHorizontal="14dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="14dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:id="@+id/layoutProgress"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="2. WINK GPU ULTRA-HD QUALITY RESTORATION"
-                android:textColor="@color/emerald_light"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:layout_marginBottom="8dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvProgressStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Processing video... 0%"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="6dp"
+                    android:layout_marginTop="6dp"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressTint="@color/accent_blue_light" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOptimize"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:enabled="false"
+                android:text="Export HD Video"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/accent_blue"
+                app:cornerRadius="10dp"
+                app:icon="@drawable/ic_bolt"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="#FFFFFF" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ========================================================= -->
+    <!-- POPUP 1: HAMBURGER MENU (VIDEO SETTINGS BOTTOM SHEET)     -->
+    <!-- ========================================================= -->
+    <FrameLayout
+        android:id="@+id/overlayMenuPopup"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#B3000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="@drawable/bg_sheet_top"
+            android:clickable="true"
+            android:focusable="true"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingBottom="12dp">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_sliders" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:text="Video Settings"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/btnCloseMenu"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Close"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_close" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginBottom="10dp"
+                android:background="@color/border_slate" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/switchWinkRestore"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
                 android:checked="true"
-                android:text="✨ Wink Ultra-HD Restoration (De-Block + CAS Edge Sharpen)"
-                android:textColor="@color/emerald_light"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
-                android:text="Runs a 9-tap GPU shader on every frame: smooths blocky compression noise on flat areas (grass/skin) while reconstructing razor-sharp text &amp; hero outlines."
-                android:textColor="@color/text_secondary"
-                android:textSize="11sp" />
+                android:text="Detail &amp; Edge Sharpening (Wink Mode)"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/switchWinkMax"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:checked="true"
-                android:text="🔥 Wink MAX Game/Anime Clarifier (Stronger Detail Pop)"
+                android:text="High Clarity Strength (3x3 + 7x7)"
                 android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-        </LinearLayout>
+                android:textSize="14sp" />
 
-        <!-- STEP 3: STATUS CLIP TRIMMER & BITRATE LOCK -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:padding="16dp">
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchRotateVertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="Rotate 90° (Full-Screen Landscape)"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchMuteAudio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="Mute Audio"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchHdrToneMap"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="Force HDR-to-SDR Tone-Map"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="3. STATUS CLIP WINDOW &amp; BITRATE MODE (&lt;10.5 MB CEILING)"
-                android:textColor="@color/emerald_light"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="12dp"
+                android:text="StatHD v1.4-beta"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </FrameLayout>
 
-            <!-- Preset 1: 30s Ultra HD -->
+    <!-- ========================================================= -->
+    <!-- POPUP 2: TARGET QUALITY PRESET DIALOG                     -->
+    <!-- ========================================================= -->
+    <FrameLayout
+        android:id="@+id/overlayPresetPopup"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#B3000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_dialog_dark"
+            android:clickable="true"
+            android:focusable="true"
+            android:orientation="vertical"
+            android:padding="18dp">
+
             <LinearLayout
-                android:id="@+id/cardPreset720"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingBottom="10dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Target Quality"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/btnClosePreset"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Close"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_close" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/cardPreset30"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:background="@drawable/bg_preset_selected"
                 android:clickable="true"
                 android:focusable="true"
@@ -200,7 +596,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="30s WINK ULTRA HD (Recommended • Maximum Detail)"
+                    android:text="720p HD • Max 30s (Recommended)"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -208,15 +604,14 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="Max 30s Clip • Locked 2.65 Mbps H.264 High-Profile CABAC (~9.9 MB) • 1280px Max Long-Side (1:1 Native if &lt;=1280px)."
+                    android:layout_marginTop="2dp"
+                    android:text="3.2 Mbps H.264 • Best clarity for status clips"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Preset 2: 45s High Clarity -->
             <LinearLayout
-                android:id="@+id/cardPreset1080"
+                android:id="@+id/cardPreset45"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -229,7 +624,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="45s WINK HIGH CLARITY (&lt;10.5 MB CEILING)"
+                    android:text="720p HD • Max 45s"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -237,15 +632,14 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="Max 45s Clip • Locked 1.80 Mbps H.264 High-Profile CABAC (~10.2 MB)."
+                    android:layout_marginTop="2dp"
+                    android:text="1.8 Mbps H.264 • Keeps size under 10.5 MB"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Preset 3: 60s Balanced -->
             <LinearLayout
-                android:id="@+id/cardPreset60s"
+                android:id="@+id/cardPreset60"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -258,7 +652,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="60s 1-MINUTE STATUS (1.38 Mbps High-Profile)"
+                    android:text="720p HD • Max 60s"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -266,197 +660,119 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="Max 60s Clip • Note: Use 30s mode for fast-action gaming highlights to get 2x higher bitrate per second!"
+                    android:layout_marginTop="2dp"
+                    android:text="1.38 Mbps H.264 • Full 1-minute status"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
 
-            <!-- Highlight Start Time Trimmer Slider -->
+    <!-- ========================================================= -->
+    <!-- POPUP 3: EXPORT COMPLETE RESULT DIALOG                    -->
+    <!-- ========================================================= -->
+    <FrameLayout
+        android:id="@+id/overlayResultPopup"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#B8000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_dialog_dark"
+            android:clickable="true"
+            android:focusable="true"
+            android:orientation="vertical"
+            android:padding="20dp">
+
             <LinearLayout
-                android:id="@+id/layoutTrimSlider"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="#0B0F17"
-                android:orientation="vertical"
-                android:padding="12dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingBottom="10dp">
 
                 <TextView
-                    android:id="@+id/tvTrimWindow"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:fontFamily="monospace"
-                    android:text="Clip Window: 0:00 ➔ 0:30 (Slide to pick highlight moment)"
-                    android:textColor="@color/emerald_light"
-                    android:textSize="12sp"
+                    android:layout_weight="1"
+                    android:text="Export Complete"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <SeekBar
-                    android:id="@+id/seekBarTrimStart"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:max="100"
-                    android:progress="0"
-                    android:progressTint="@color/emerald_primary"
-                    android:thumbTint="@color/emerald_light" />
+                <ImageButton
+                    android:id="@+id/btnCloseResult"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Close"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_close" />
             </LinearLayout>
-        </LinearLayout>
-
-        <!-- STEP 4: ORIENTATION & AUDIO TUNING -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="4. ORIENTATION &amp; AUDIO TUNING"
-                android:textColor="@color/emerald_light"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchRotateVertical"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:checked="false"
-                android:text="Gamer Full-Screen Mode (Rotate 90° Vertical • 2.5x Bigger Pixels)"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchMuteAudio"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:text="Remove Audio (100% Bitrate Quota for Video)"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchCrispBoost"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:text="Extra Deep Contrast (Keep OFF for natural shadow detail)"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchHdrToneMap"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:text="Force HDR-to-SDR Tone-Map (Only for 10-bit HDR clips)"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-        </LinearLayout>
-
-        <!-- STEP 5: EXECUTE & PROGRESS -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnOptimize"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="16dp"
-            android:enabled="false"
-            android:text="RESTORE &amp; OPTIMIZE VIDEO (WINK HD)"
-            android:textColor="#04130D"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            app:backgroundTint="@color/emerald_light"
-            app:cornerRadius="12dp" />
-
-        <LinearLayout
-            android:id="@+id/layoutProgress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:padding="14dp"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/tvProgressStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:text="Running Wink GPU Shader + H.264 High Profile... 0%"
-                android:textColor="@color/emerald_light"
-                android:textSize="12sp" />
-
-            <ProgressBar
-                android:id="@+id/progressBar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
-                android:layout_height="10dp"
-                android:layout_marginTop="8dp"
-                android:indeterminate="false"
-                android:max="100"
-                android:progress="0"
-                android:progressTint="@color/emerald_primary" />
-        </LinearLayout>
-
-        <!-- STEP 6: OUTPUT RESULT & DIRECT WHATSAPP SHARE -->
-        <LinearLayout
-            android:id="@+id/cardResult"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:layout_marginBottom="24dp"
-            android:background="@drawable/bg_preset_selected"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="✓ WINK GPU ULTRA-HD MASTER READY"
-                android:textColor="@color/emerald_light"
-                android:textSize="13sp"
-                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvResultSpecs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:fontFamily="monospace"
-                android:text="New Size: - MB | Bitrate: - Mbps"
+                android:background="@drawable/bg_preset_unselected"
+                android:padding="12dp"
+                android:text="720x1280 • 7.9 MB • 3.2 Mbps H.264"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCompareNow"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="14dp"
+                android:text="Compare Before &amp; After"
+                android:textAllCaps="false"
                 android:textColor="@color/text_primary"
-                android:textSize="12sp" />
+                android:textSize="13sp"
+                app:cornerRadius="10dp"
+                app:strokeColor="@color/border_slate" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnShareWhatsApp"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="14dp"
-                android:text="SEND DIRECTLY TO WHATSAPP STATUS"
-                android:textColor="#04130D"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:text="Share to WhatsApp"
+                android:textAllCaps="false"
+                android:textColor="#07130B"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 app:backgroundTint="@color/whatsapp_green"
-                app:cornerRadius="10dp" />
+                app:cornerRadius="10dp"
+                app:icon="@drawable/ic_share"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="#07130B" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveGallery"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="46dp"
                 android:layout_marginTop="8dp"
-                android:text="SAVE TO GALLERY (Movies/StatHD)"
-                android:textColor="@color/emerald_light"
-                android:textStyle="bold"
+                android:text="Save to Gallery"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                app:backgroundTint="#22262E"
                 app:cornerRadius="10dp"
-                app:strokeColor="@color/emerald_primary" />
+                app:icon="@drawable/ic_download"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="#FFFFFF" />
         </LinearLayout>
+    </FrameLayout>
 
-    </LinearLayout>
-</ScrollView>
+</FrameLayout>

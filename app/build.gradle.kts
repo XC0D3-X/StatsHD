@@ -11,8 +11,8 @@ android {
         applicationId = "com.stathd.purestatus"
         minSdk = 26
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.4.0-beta"
+        versionCode = 6
+        versionName = "1.4-beta"
     }
 
     buildTypes {
