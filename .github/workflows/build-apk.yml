@@ -1,4 +1,4 @@
-name: Build StatHD Android APK (Beta)
+name: Build StatHD Android APK (Stable Release)
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Compile StatHD Beta APK
+    name: Compile StatHD Stable APK
     runs-on: ubuntu-latest
 
     steps:
@@ -28,36 +28,42 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Build Signed Beta APK
+      - name: Build Signed Stable Release APK
         run: gradle assembleRelease --no-daemon --stacktrace
 
-      - name: Prepare Beta APK
+      - name: Prepare Stable APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.9-beta.apk
-          ls -lh StatHD-v1.4.9-beta.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.5.0.apk
+          ls -lh StatHD-v1.5.0.apk
 
-      - name: Upload Beta APK Artifact
+      - name: Upload Stable APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: StatHD-WhatsApp-Status-HD-Beta-APK
-          path: StatHD-v1.4.9-beta.apk
+          name: StatHD-v1.5.0-Stable-APK
+          path: StatHD-v1.5.0.apk
           if-no-files-found: error
 
-      - name: Publish Pre-Release Beta APK to GitHub Releases
+      - name: Publish Official Stable Release to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.9-beta
-          name: "StatHD v1.4.9-beta — International Country Code Selector (Telegram-Style)"
+          tag_name: v1.5.0
+          name: "StatHD v1.5.0 — Official Stable Release"
           body: |
-            ### StatHD v1.4.9-beta (Global Country Code Selector)
-            > **Note:** Active **Beta / Pre-Release** build (`prerelease: true`).
+            ### StatHD v1.5.0 — Official Stable Release (Android)
 
-            #### New in v1.4.9-beta:
-            - **Telegram-Style International Country Code Selector:** Supports users worldwide with a country picker dropdown (`+60`, `+62`, `+65`, `+1`, `+44`, `+91`, `+61`, etc.) plus a custom editable `+XX` country code box for any country on Earth.
-            - Automatically strips leading `0` from local numbers and remembers your selected country & number.
+            **StatHD** is a 100% free, ad-free, watermark-free open-source Android app engineered to upload crystal-clear **True 1080p HD** videos and photos to **WhatsApp Status**.
 
-            **Direct Beta APK Download:**
-            Tap **`StatHD-v1.4.9-beta.apk`** under **Assets** below to install on your Android device.
-          files: StatHD-v1.4.9-beta.apk
+            #### Highlights in v1.5.0:
+            - **Native 1:1 Pixel Preservation (Up to `2200px`) + H.264 High Profile (CABAC):** Eliminates fractional bilinear downscale blur on phone recordings (`1220x2168`) and forces `AVCProfileHigh` with 1-second keyframes for razor-sharp text & motion.
+            - **100% Lossless Bit-for-Bit Stream Copy:** Automatically copies video packets directly with zero re-encoding whenever source clips already fit size limits.
+            - **Built-In WhatsApp Cloud API Bot Delivery (True 1080p Bypass):** Streams untouched `1080p` MP4s (`< 16 MB`) via Cloudflare Worker directly to your WhatsApp chat for zero-compression forwarding to Status — featuring a **Telegram-style International Country Code Selector** for users worldwide.
+            - **Clean Zero-Scroll Native UI & 100% Vector Icons:** Single-screen video editor with Play/Pause timeline scrubber, clip trim slider, Hamburger Settings drawer, Target Quality dialog, and bottom-right `+` FAB.
+            - **Live Before / After & Draggable 50/50 Split-Screen Comparison:** Inspect **Original**, **Split**, and **Enhanced** frames directly inside the app before sharing.
+            - **HD Photo Optimizer:** Unified `+` picker & Gallery Share sheet supports **both Videos and Photos** with EXIF auto-fix and JPEG Q92 export.
+            - **Optional Wink GPU Shader & Gamer 90° Mode:** Optional Dual-Radius (`3x3` + `7x7`) OpenGL ES 2.0 sharpening shader and 90° vertical full-screen rotation for landscape games.
+
+            **Direct APK Download for Android:**
+            Tap **`StatHD-v1.5.0.apk`** under **Assets** below to install on your Android device.
+          files: StatHD-v1.5.0.apk
           draft: false
-          prerelease: true
+          prerelease: false
