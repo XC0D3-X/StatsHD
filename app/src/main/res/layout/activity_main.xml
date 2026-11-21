@@ -636,7 +636,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="1080p Full HD • 30s (Chat HD ➔ Forward)"
+                    android:text="1080p Full HD • Max 15MB (Chat HD ➔ Forward)"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -645,7 +645,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="5.0 Mbps H.264 • Send to Message Yourself as HD, then Forward to Status"
+                    android:text="Full Dynamic Bitrate up to 16 Mbps (fills ~15 MB) • Send to Message Yourself as HD ➔ Forward"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -664,7 +664,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="720p HD • Max 30s (Recommended)"
+                    android:text="720p HD • Max 11MB (Full Performance)"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -673,7 +673,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="3.2 Mbps H.264 • Best clarity for status clips"
+                    android:text="Auto-maximizes bitrate up to 12 Mbps to fill ~10.6 MB budget"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>

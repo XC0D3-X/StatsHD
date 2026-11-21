@@ -68,10 +68,10 @@ class MainActivity : AppCompatActivity() {
         val maxBitrateBps: Int,
         val maxFileSizeMb: Double
     ) {
-        CLIP_30S_1080P("1080p FHD • 30s", 30_000L, 1920, 5_000_000, 15.5),
-        CLIP_30S_ULTRA("720p HD • 30s", 30_000L, 1280, 3_200_000, 10.2),
-        CLIP_45S_HD("720p HD • 45s", 45_000L, 1280, 1_800_000, 10.2),
-        CLIP_60S_FULL("720p HD • 60s", 60_000L, 1280, 1_380_000, 10.2)
+        CLIP_30S_1080P("1080p FHD • Max 15MB", 30_000L, 1920, 16_000_000, 15.2),
+        CLIP_30S_ULTRA("720p HD • Max 11MB", 30_000L, 1280, 12_000_000, 10.6),
+        CLIP_45S_HD("720p HD • 45s", 45_000L, 1280, 6_000_000, 10.6),
+        CLIP_60S_FULL("720p HD • 60s", 60_000L, 1280, 4_000_000, 10.6)
     }
 
     enum class CompareMode {
@@ -993,6 +993,7 @@ class MainActivity : AppCompatActivity() {
         val videoEncoderSettings = VideoEncoderSettings.Builder()
             .setBitrate(targetBitrateBps)
             .setiFrameIntervalSeconds(1.0f)
+            .experimentalSetEnableHighQualityTargeting(true)
             .build()
 
         val encoderFactory = DefaultEncoderFactory.Builder(this)
