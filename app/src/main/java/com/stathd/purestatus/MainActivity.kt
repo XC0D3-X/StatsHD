@@ -135,9 +135,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var overlayResultPopup: FrameLayout
     private lateinit var btnCloseResult: ImageButton
     private lateinit var tvResultSpecs: TextView
+    private lateinit var boxHdForwardTip: LinearLayout
     private lateinit var btnCompareNow: MaterialButton
     private lateinit var btnShareWhatsApp: MaterialButton
     private lateinit var btnSaveGallery: MaterialButton
+
+    private lateinit var btnOpenGuide: LinearLayout
+    private lateinit var overlayGuidePopup: FrameLayout
+    private lateinit var btnCloseGuide: ImageButton
+    private lateinit var btnGotItGuide: MaterialButton
 
     // Media State
     private var selectedMediaUri: Uri? = null
@@ -256,9 +262,15 @@ class MainActivity : AppCompatActivity() {
         overlayResultPopup = findViewById(R.id.overlayResultPopup)
         btnCloseResult = findViewById(R.id.btnCloseResult)
         tvResultSpecs = findViewById(R.id.tvResultSpecs)
+        boxHdForwardTip = findViewById(R.id.boxHdForwardTip)
         btnCompareNow = findViewById(R.id.btnCompareNow)
         btnShareWhatsApp = findViewById(R.id.btnShareWhatsApp)
         btnSaveGallery = findViewById(R.id.btnSaveGallery)
+
+        btnOpenGuide = findViewById(R.id.btnOpenGuide)
+        overlayGuidePopup = findViewById(R.id.overlayGuidePopup)
+        btnCloseGuide = findViewById(R.id.btnCloseGuide)
+        btnGotItGuide = findViewById(R.id.btnGotItGuide)
     }
 
     private fun setupListeners() {
@@ -369,6 +381,17 @@ class MainActivity : AppCompatActivity() {
 
         btnCloseResult.setOnClickListener { overlayResultPopup.visibility = View.GONE }
         overlayResultPopup.setOnClickListener { overlayResultPopup.visibility = View.GONE }
+
+        btnOpenGuide.setOnClickListener {
+            overlayMenuPopup.visibility = View.GONE
+            overlayGuidePopup.visibility = View.VISIBLE
+        }
+        boxHdForwardTip.setOnClickListener {
+            overlayGuidePopup.visibility = View.VISIBLE
+        }
+        btnCloseGuide.setOnClickListener { overlayGuidePopup.visibility = View.GONE }
+        btnGotItGuide.setOnClickListener { overlayGuidePopup.visibility = View.GONE }
+        overlayGuidePopup.setOnClickListener { overlayGuidePopup.visibility = View.GONE }
 
         btnCompareNow.setOnClickListener {
             overlayResultPopup.visibility = View.GONE
