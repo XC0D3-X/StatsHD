@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 460" width="820" height="460" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <!-- Canvas Background -->
+  <rect width="820" height="460" rx="18" fill="#0B0E14"/>
+
+  <!-- ========================================================= -->
+  <!-- LEFT PHONE: ZERO-SCROLL MAIN EDITOR + BEFORE/AFTER SPLIT  -->
+  <!-- ========================================================= -->
+  <g transform="translate(55, 22)">
+    <!-- Phone Outer Shell -->
+    <rect x="0" y="0" width="320" height="416" rx="26" fill="#0F1115" stroke="#262930" stroke-width="2"/>
+
+    <!-- Top App Bar -->
+    <path d="M2,26 Q2,2 26,2 L294,2 Q318,2 318,26 L318,48 L2,48 Z" fill="#14171C"/>
+    <line x1="2" y1="48" x2="318" y2="48" stroke="#22262E" stroke-width="1"/>
+    <!-- Hamburger Icon -->
+    <line x1="20" y1="20" x2="34" y2="20" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="20" y1="25" x2="30" y2="25" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="20" y1="30" x2="33" y2="30" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round"/>
+    <!-- App Title -->
+    <text x="46" y="30" fill="#F8FAFC" font-size="14" font-weight="700">StatHD</text>
+    <!-- Preset Pill -->
+    <rect x="176" y="13" width="128" height="24" rx="12" fill="#1C2027" stroke="#2C313C" stroke-width="1"/>
+    <text x="234" y="29" fill="#E2E8F0" font-size="10" font-weight="600" text-anchor="middle">1080p Native • 14MB ▾</text>
+
+    <!-- Main Video Viewport -->
+    <rect x="2" y="49" width="316" height="232" fill="#090A0D"/>
+
+    <!-- Segmented Before / Split / After Bar -->
+    <rect x="74" y="60" width="172" height="24" rx="12" fill="#14171C" stroke="#2C313C" stroke-width="1"/>
+    <text x="103" y="76" fill="#94A3B8" font-size="10" text-anchor="middle">Original</text>
+    <rect x="133" y="62" width="54" height="20" rx="10" fill="#2563EB"/>
+    <text x="160" y="76" fill="#FFFFFF" font-size="10" font-weight="600" text-anchor="middle">Split</text>
+    <text x="216" y="76" fill="#94A3B8" font-size="10" text-anchor="middle">Enhanced</text>
+
+    <!-- Video Preview Frame (Left Original | Right Enhanced) -->
+    <rect x="20" y="94" width="140" height="172" rx="8" fill="#12161E"/>
+    <rect x="160" y="94" width="140" height="172" rx="8" fill="#0E1A18"/>
+    <line x1="160" y1="94" x2="160" y2="266" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.85"/>
+    <circle cx="160" cy="180" r="11" fill="#FFFFFF"/>
+    <text x="160" y="184" fill="#0F1115" font-size="11" font-weight="700" text-anchor="middle">⇄</text>
+
+    <!-- Labels inside Split View -->
+    <rect x="28" y="242" width="52" height="16" rx="4" fill="#000000" fill-opacity="0.65"/>
+    <text x="54" y="253" fill="#CBD5E1" font-size="9" text-anchor="middle">Original</text>
+    <rect x="234" y="242" width="58" height="16" rx="4" fill="#2563EB" fill-opacity="0.85"/>
+    <text x="263" y="253" fill="#FFFFFF" font-size="9" font-weight="600" text-anchor="middle">Enhanced</text>
+
+    <!-- Mock Center Video Content -->
+    <rect x="65" y="156" width="190" height="48" rx="8" fill="#161B24" stroke="#2E3646" stroke-width="1"/>
+    <text x="160" y="175" fill="#F8FAFC" font-size="11" font-weight="600" text-anchor="middle">1220x2168 • 1:1 Native</text>
+    <rect x="82" y="184" width="156" height="6" rx="3" fill="#2563EB"/>
+
+    <!-- Bottom-Right '+' Floating Action Button -->
+    <circle cx="288" cy="252" r="20" fill="#2563EB"/>
+    <line x1="288" y1="244" x2="288" y2="260" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"/>
+    <line x1="280" y1="252" x2="296" y2="252" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"/>
+
+    <!-- Timeline & Trim Controller -->
+    <rect x="2" y="281" width="316" height="72" fill="#14171C"/>
+    <line x1="2" y1="281" x2="318" y2="281" stroke="#22262E" stroke-width="1"/>
+    <!-- Play Button + Scrubber -->
+    <rect x="14" y="291" width="24" height="24" rx="6" fill="#1E232B" stroke="#2C313C" stroke-width="1"/>
+    <polygon points="23,298 32,303 23,308" fill="#FFFFFF"/>
+    <text x="46" y="307" fill="#E2E8F0" font-size="10">0:04</text>
+    <rect x="74" y="301" width="194" height="4" rx="2" fill="#262A34"/>
+    <rect x="74" y="301" width="68" height="4" rx="2" fill="#3B82F6"/>
+    <circle cx="142" cy="303" r="5" fill="#FFFFFF"/>
+    <text x="278" y="307" fill="#94A3B8" font-size="10">0:20</text>
+    <!-- Trim Row -->
+    <text x="16" y="339" fill="#94A3B8" font-size="10">Trim: 0:00 – 0:20 (Full)</text>
+    <rect x="200" y="333" width="102" height="3" rx="1.5" fill="#2C313C"/>
+    <circle cx="204" cy="334.5" r="4" fill="#E2E8F0"/>
+
+    <!-- Bottom Export Button -->
+    <path d="M2,353 L318,353 L318,390 Q318,414 294,414 L26,414 Q2,414 2,390 Z" fill="#14171C"/>
+    <rect x="14" y="362" width="292" height="38" rx="9" fill="#2563EB"/>
+    <text x="160" y="385" fill="#FFFFFF" font-size="12" font-weight="700" text-anchor="middle">Export HD Video</text>
+  </g>
+
+  <!-- ========================================================= -->
+  <!-- RIGHT PHONE: EXPORT COMPLETE + TRUE 1080p WHATSAPP BOT    -->
+  <!-- ========================================================= -->
+  <g transform="translate(445, 22)">
+    <!-- Phone Outer Shell -->
+    <rect x="0" y="0" width="320" height="416" rx="26" fill="#0F1115" stroke="#262930" stroke-width="2"/>
+    <rect x="2" y="2" width="316" height="412" rx="24" fill="#07080B" fill-opacity="0.88"/>
+
+    <!-- Export Complete Modal Card -->
+    <rect x="18" y="44" width="284" height="328" rx="16" fill="#181B22" stroke="#2C313C" stroke-width="1.5"/>
+    <text x="36" y="74" fill="#F8FAFC" font-size="15" font-weight="700">Export Complete</text>
+    <text x="278" y="74" fill="#94A3B8" font-size="14" text-anchor="end">✕</text>
+
+    <!-- Specs Pill -->
+    <rect x="34" y="88" width="252" height="34" rx="8" fill="#12151A" stroke="#262A34" stroke-width="1"/>
+    <text x="46" y="109" fill="#CBD5E1" font-size="11">1220x2168 • 13.2 MB • 5.6 Mbps High</text>
+
+    <!-- Step-by-Step True HD Tip Box -->
+    <rect x="34" y="132" width="252" height="62" rx="8" fill="#1A2438" stroke="#2563EB" stroke-width="1"/>
+    <text x="44" y="149" fill="#F8FAFC" font-size="10.5" font-weight="700">True 1080p HD Delivery:</text>
+    <text x="44" y="164" fill="#94A3B8" font-size="9.5">1. Tap Send via HD Bot (True 1080p).</text>
+    <text x="44" y="177" fill="#94A3B8" font-size="9.5">2. Open Bot chat ➔ Forward to My Status.</text>
+
+    <!-- Compare Button -->
+    <rect x="34" y="204" width="252" height="34" rx="8" fill="#181B22" stroke="#2C313C" stroke-width="1"/>
+    <text x="160" y="225" fill="#F8FAFC" font-size="11.5" font-weight="600" text-anchor="middle">Compare Before &amp; After</text>
+
+    <!-- Send via HD Bot Button -->
+    <rect x="34" y="246" width="252" height="38" rx="8" fill="#2563EB"/>
+    <text x="160" y="269" fill="#FFFFFF" font-size="12" font-weight="700" text-anchor="middle">Send via HD Bot (True 1080p)</text>
+
+    <!-- Share to WhatsApp Button -->
+    <rect x="34" y="292" width="252" height="34" rx="8" fill="#25D366"/>
+    <text x="160" y="313" fill="#07130B" font-size="11.5" font-weight="700" text-anchor="middle">Share to WhatsApp</text>
+
+    <!-- Save to Gallery Button -->
+    <rect x="34" y="332" width="252" height="30" rx="8" fill="#22262E"/>
+    <text x="160" y="351" fill="#FFFFFF" font-size="11" font-weight="600" text-anchor="middle">Save to Gallery</text>
+  </g>
+</svg>

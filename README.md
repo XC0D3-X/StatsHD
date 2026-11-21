@@ -1,14 +1,24 @@
 <div align="center">
 
+<img src="./docs/stathd-icon.svg" width="96" height="96" alt="StatHD App Icon" />
+
 # StatHD — WhatsApp Status True 1080p HD Optimizer
 
 **Native Android Video & Photo Optimizer + Zero-Storage WhatsApp Cloud API Bot to Bypass WhatsApp Status Compression**
 
-[![Download APK](https://img.shields.io/badge/Download_APK-Latest_Release-10B981?style=for-the-badge&logo=android&logoColor=white)](https://github.com/XC0D3-X/StatsHD/releases)
+[![Download APK](https://img.shields.io/badge/Download_APK-v1.5.0_Stable-10B981?style=for-the-badge&logo=android&logoColor=white)](https://github.com/XC0D3-X/StatsHD/releases/latest)
 [![Self-Host Guide](https://img.shields.io/badge/Build_Your_Own-Step--by--Step_Guide-2563EB?style=for-the-badge&logo=github&logoColor=white)](./SELF_HOST_GUIDE.md)
 [![Telegram](https://img.shields.io/badge/Telegram-@harithwyd-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/harithwyd)
 [![GitHub](https://img.shields.io/badge/GitHub-XC0D3--X-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/XC0D3-X)
 
+</div>
+
+---
+
+## App UI Preview
+
+<div align="center">
+  <img src="./docs/stathd-ui-preview.svg" width="780" alt="StatHD Android UI Preview — Zero-Scroll Video Editor, Before/After Split Comparison & True 1080p Bot Export" />
 </div>
 
 ---
@@ -28,8 +38,8 @@
    - **100% Lossless Bit-for-Bit Stream Copy (`MediaExtractor` + `MediaMuxer`)** when your source clip already fits within size limits.
 2. **Free WhatsApp Cloud API Bot Integration (`stathd-bot/`):**
    - Streams your optimized `1080p` MP4 (up to `16 MB`) directly through a zero-storage **Cloudflare Worker** to **Meta's Official WhatsApp Cloud API**, completely bypassing WhatsApp Android's local `720p` / `3.9 MB` status compressor.
-   - Forward the untouched `1080p` video from your bot chat straight to **My Status**!
-3. **Clean Zero-Scroll Native UI:**
+   - Includes a **Telegram-style International Country Code Selector** (`+60`, `+62`, `+65`, `+1`, `+44`, `+91`, custom `+XX`) for global users.
+3. **Clean Zero-Scroll Native UI & 100% Vector Icons:**
    - Single-screen video editor with crisp Android Vector icons (`res/drawable/ic_*.xml`), Play/Pause timeline scrubber, clip trim controller, Hamburger settings sheet, and bottom-right `+` FAB.
    - **Live Before / After & Draggable 50/50 Split-Screen Comparison** (`Original | Split | Enhanced`) for both Videos and Photos.
 4. **HD Photo Optimizer (`HdPhotoOptimizer.kt`):**
@@ -42,6 +52,7 @@
 ## Repository Structure
 - `app/` — Native Android Kotlin application (Media3 Transformer, OpenGL Shader, HD Photo Optimizer, Bot Uploader)
 - `stathd-bot/` — Zero-storage Cloudflare Worker bridge for Meta WhatsApp Cloud API
+- `docs/` — App icon logo & UI preview assets
 - `.github/workflows/build-apk.yml` — Automated GitHub Actions workflow that compiles and publishes your signed `.apk`
 - `SELF_HOST_GUIDE.md` — Complete beginner-friendly guide to fork, configure your own free bot, and build your own APK
 
