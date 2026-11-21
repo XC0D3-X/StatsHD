@@ -11,30 +11,30 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.BaseGlShaderProgram
 import androidx.media3.effect.GlEffect
 import androidx.media3.effect.GlShaderProgram
+import kotlin.math.max
 
 /**
- * WinkUltraHdEffect v1.4 — Dual-Radius Multi-Scale Unsharp + Local 3D Clarity GPU Shader
+ * WinkUltraHdEffect v1.4.7 — Resolution-Adaptive Ultra-Sharp Dual-Radius GPU Shader
  *
- * Calibrated directly on zoomed portrait gameplay (1220x2168 -> 720x1280) to survive
- * WhatsApp Status's internal H.264 DCT quantization:
- * 1. Fine 3x3 Kernel (1.0px radius, amount 1.65x): Reconstructs crisp text ("CvN Syamir 969",
- *    damage/HP numbers, HP bar tick lines, and fine UI edges).
- * 2. Wide 7x7 Clarity Kernel (2.5px radius, amount 1.15x): Reconstructs zoomed-in game textures,
- *    hero armor, bush leaves, and skill rings (Dehaze / 3D Clarity Pop).
- * 3. Micro-Contrast (1.06x) + Vibrance/Saturation (1.12x): Restores vivid HD pop without crushing blacks.
+ * Automatically adapts kernel radii for both 720p (1280px) and 1080p (1920px) outputs:
+ * 1. Fine Edge Kernel (1.25px * resScale, up to 2.25x strength): Reconstructs ultra-crisp
+ *    text, damage numbers, HP bars, eyes, and fine outlines.
+ * 2. Wide 3D Clarity Kernel (3.2px * resScale, up to 1.45x strength): Removes hazy softness
+ *    from zoomed-in gameplay/camera videos and adds strong 3D local texture pop.
+ * 3. Crisp Micro-Contrast (1.09x) + Vivid Color Pop (1.15x) with wide +-0.34 headroom.
  */
 @OptIn(UnstableApi::class)
 class WinkUltraHdEffect(
-    private val sharpnessStrength: Float = 1.0f,
+    private val sharpnessStrength: Float = 1.15f,
     private val denoiseStrength: Float = 0.0f,
-    private val vibranceBoost: Float = 0.12f
+    private val vibranceBoost: Float = 0.15f
 ) : GlEffect {
 
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram {
         return WinkUltraHdShaderProgram(
             useHdr = useHdr,
             sharpness = sharpnessStrength,
-            clarity = if (sharpnessStrength >= 0.85f) 1.15f else 0.75f,
+            clarity = if (sharpnessStrength >= 0.85f) 1.45f else 0.90f,
             vibrance = vibranceBoost
         )
     }
@@ -49,8 +49,9 @@ private class WinkUltraHdShaderProgram(
 ) : BaseGlShaderProgram(useHdr, /* texturePoolCapacity= */ 1) {
 
     private val glProgram: GlProgram
-    private var texelWidth: Float = 1.0f / 720.0f
-    private var texelHeight: Float = 1.0f / 1280.0f
+    private var texelWidth: Float = 1.0f / 1080.0f
+    private var texelHeight: Float = 1.0f / 1920.0f
+    private var resScale: Float = 1.5f
 
     init {
         try {
@@ -66,6 +67,7 @@ private class WinkUltraHdShaderProgram(
             glProgram.setFloatUniform("uSharpness", sharpness)
             glProgram.setFloatUniform("uClarity", clarity)
             glProgram.setFloatUniform("uVibrance", vibrance)
+            glProgram.setFloatUniform("uResScale", resScale)
             glProgram.setFloatsUniform("uTexelSize", floatArrayOf(texelWidth, texelHeight))
         } catch (e: GlUtil.GlException) {
             throw VideoFrameProcessingException(e)
@@ -73,10 +75,13 @@ private class WinkUltraHdShaderProgram(
     }
 
     override fun configure(inputWidth: Int, inputHeight: Int): Size {
-        val safeW = if (inputWidth > 0) inputWidth else 720
-        val safeH = if (inputHeight > 0) inputHeight else 1280
+        val safeW = if (inputWidth > 0) inputWidth else 1080
+        val safeH = if (inputHeight > 0) inputHeight else 1920
         texelWidth = 1.0f / safeW.toFloat()
         texelHeight = 1.0f / safeH.toFloat()
+        // Automatically scale tap radius at 1080p (1920px) so sharpening stays just as punchy as 720p!
+        val longSide = max(safeW, safeH).toFloat()
+        resScale = max(1.0f, longSide / 1280.0f)
         return Size(safeW, safeH)
     }
 
@@ -85,6 +90,7 @@ private class WinkUltraHdShaderProgram(
             glProgram.use()
             glProgram.setSamplerTexIdUniform("uTexSampler", inputTexId, /* texUnitIndex= */ 0)
             glProgram.setFloatsUniform("uTexelSize", floatArrayOf(texelWidth, texelHeight))
+            glProgram.setFloatUniform("uResScale", resScale)
             glProgram.setFloatUniform("uSharpness", sharpness)
             glProgram.setFloatUniform("uClarity", clarity)
             glProgram.setFloatUniform("uVibrance", vibrance)
@@ -128,6 +134,7 @@ private class WinkUltraHdShaderProgram(
             precision highp float;
             uniform sampler2D uTexSampler;
             uniform vec2 uTexelSize;
+            uniform float uResScale;
             uniform float uSharpness;
             uniform float uClarity;
             uniform float uVibrance;
@@ -140,13 +147,13 @@ private class WinkUltraHdShaderProgram(
             void main() {
               vec2 uv = vTexSamplingCoord;
 
-              // Center raw pixel (never pre-blurred!)
               vec4 c4 = texture2D(uTexSampler, uv);
               vec3 c  = c4.rgb;
 
-              // SCALE 1: Fine 3x3 Unsharp Kernel (1.0px radius — sharpens text, numbers & HP bar ticks)
-              vec2 dx1 = vec2(uTexelSize.x, 0.0);
-              vec2 dy1 = vec2(0.0, uTexelSize.y);
+              // SCALE 1: Fine High-Frequency Edge Reconstruction (resolution-adaptive)
+              float r1 = 1.25 * uResScale;
+              vec2 dx1 = vec2(uTexelSize.x * r1, 0.0);
+              vec2 dy1 = vec2(0.0, uTexelSize.y * r1);
               vec3 n1  = texture2D(uTexSampler, uv - dy1).rgb;
               vec3 s1  = texture2D(uTexSampler, uv + dy1).rgb;
               vec3 w1  = texture2D(uTexSampler, uv - dx1).rgb;
@@ -159,9 +166,10 @@ private class WinkUltraHdShaderProgram(
               vec3 blurFine = (n1 + s1 + w1 + e1) * 0.15 + (nw1 + ne1 + sw1 + se1) * 0.10;
               vec3 detailFine = c - blurFine;
 
-              // SCALE 2: Wide 7x7 Clarity Kernel (2.5px radius — reconstructs zoomed-in game edges & armor)
-              vec2 dx2 = vec2(uTexelSize.x * 2.5, 0.0);
-              vec2 dy2 = vec2(0.0, uTexelSize.y * 2.5);
+              // SCALE 2: Wide 3D Local Clarity / Dehaze (reconstructs zoomed textures & armor)
+              float r2 = 3.2 * uResScale;
+              vec2 dx2 = vec2(uTexelSize.x * r2, 0.0);
+              vec2 dy2 = vec2(0.0, uTexelSize.y * r2);
               vec3 n2  = texture2D(uTexSampler, uv - dy2).rgb;
               vec3 s2  = texture2D(uTexSampler, uv + dy2).rgb;
               vec3 w2  = texture2D(uTexSampler, uv - dx2).rgb;
@@ -174,18 +182,16 @@ private class WinkUltraHdShaderProgram(
               vec3 blurWide = (n2 + s2 + w2 + e2) * 0.15 + (nw2 + ne2 + sw2 + se2) * 0.10;
               vec3 detailWide = c - blurWide;
 
-              // Noise gate: only suppress ultra-flat mosquito noise (< 0.005), full strength on all edges
               float edgeEnergy = abs(getLuma(detailFine)) + abs(getLuma(detailWide));
-              float noiseGate = smoothstep(0.003, 0.016, edgeEnergy);
+              float noiseGate = smoothstep(0.002, 0.012, edgeEnergy);
 
-              // Dual-Radius Unsharp Reconstruction (matches FFmpeg unsharp=3:3:1.65 + unsharp=7:7:1.15)
-              vec3 boost = (detailFine * (1.65 * uSharpness) + detailWide * (1.05 * uClarity)) * noiseGate;
-              // Soft limit at +-0.24 so text & UI borders pop strongly without severe clipping
-              boost = clamp(boost, -0.24, 0.24);
+              // Strong Wink Ultra-HD Reconstruction
+              vec3 boost = (detailFine * (2.25 * uSharpness) + detailWide * (1.35 * uClarity)) * noiseGate;
+              boost = clamp(boost, -0.34, 0.34);
               vec3 sharpened = clamp(c + boost, 0.0, 1.0);
 
-              // Subtle Micro-Contrast (1.06x) + Vibrance/Saturation Pop (1.12x)
-              vec3 contrasted = clamp((sharpened - 0.5) * 1.06 + 0.5, 0.0, 1.0);
+              // Crisp Micro-Contrast (1.09x) + Vivid Color Pop
+              vec3 contrasted = clamp((sharpened - 0.5) * 1.09 + 0.5, 0.0, 1.0);
               float luma = getLuma(contrasted);
               vec3 finalRgb = mix(vec3(luma), contrasted, 1.0 + uVibrance);
 
