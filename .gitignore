@@ -6,3 +6,7 @@ local.properties
 *.aab
 .idea/
 *.iml
+
+node_modules/
+.wrangler/
+

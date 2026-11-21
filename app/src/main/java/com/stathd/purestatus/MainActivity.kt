@@ -62,6 +62,11 @@ import kotlin.math.roundToInt
 @OptIn(UnstableApi::class)
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        private const val BUILT_IN_BOT_URL = "https://stathd-bot.xxxlocal7.workers.dev"
+        private const val BUILT_IN_BOT_PHONE = "15551365462"
+    }
+
     enum class StatusPreset(
         val pillLabel: String,
         val maxClipDurationMs: Long,
@@ -150,11 +155,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnOpenBotSetup: LinearLayout
     private lateinit var overlayBotSetupPopup: FrameLayout
     private lateinit var btnCloseBotSetup: ImageButton
-    private lateinit var etBotUrl: EditText
     private lateinit var etUserPhone: EditText
-    private lateinit var etBotPhone: EditText
-    private lateinit var btnSayHiToBot: MaterialButton
     private lateinit var btnSaveBotConfig: MaterialButton
+    private lateinit var btnSavePhoneOnly: MaterialButton
 
     // Media State
     private var selectedMediaUri: Uri? = null
@@ -175,7 +178,7 @@ class MainActivity : AppCompatActivity() {
     private var isVideoPlaying: Boolean = false
     private var isScrubbingTimeline: Boolean = false
     private var compareMode: CompareMode = CompareMode.ORIGINAL
-    private var currentPreset: StatusPreset = StatusPreset.CLIP_30S_ULTRA
+    private var currentPreset: StatusPreset = StatusPreset.CLIP_30S_1080P
     private var activeTransformer: Transformer? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -287,11 +290,9 @@ class MainActivity : AppCompatActivity() {
         btnOpenBotSetup = findViewById(R.id.btnOpenBotSetup)
         overlayBotSetupPopup = findViewById(R.id.overlayBotSetupPopup)
         btnCloseBotSetup = findViewById(R.id.btnCloseBotSetup)
-        etBotUrl = findViewById(R.id.etBotUrl)
         etUserPhone = findViewById(R.id.etUserPhone)
-        etBotPhone = findViewById(R.id.etBotPhone)
-        btnSayHiToBot = findViewById(R.id.btnSayHiToBot)
         btnSaveBotConfig = findViewById(R.id.btnSaveBotConfig)
+        btnSavePhoneOnly = findViewById(R.id.btnSavePhoneOnly)
         loadSavedBotPrefs()
     }
 
@@ -433,24 +434,26 @@ class MainActivity : AppCompatActivity() {
         overlayBotSetupPopup.setOnClickListener { overlayBotSetupPopup.visibility = View.GONE }
 
         btnSaveBotConfig.setOnClickListener {
-            val prefs = getSharedPreferences("stathd_bot_prefs", MODE_PRIVATE)
-            prefs.edit()
-                .putString("bot_url", etBotUrl.text.toString().trim())
-                .putString("user_phone", etUserPhone.text.toString().replace(Regex("[^0-9]"), ""))
-                .putString("bot_phone", etBotPhone.text.toString().replace(Regex("[^0-9]"), ""))
-                .apply()
-            overlayBotSetupPopup.visibility = View.GONE
-            Toast.makeText(this, "Bot configuration saved!", Toast.LENGTH_SHORT).show()
-        }
-
-        btnSayHiToBot.setOnClickListener {
-            val botNum = etBotPhone.text.toString().replace(Regex("[^0-9]"), "")
-            if (botNum.length < 7) {
-                Toast.makeText(this, "Enter the Bot WhatsApp Number first (from Meta API Setup)", Toast.LENGTH_LONG).show()
+            val normalized = normalizePhoneNumber(etUserPhone.text.toString())
+            if (normalized.length < 9) {
+                Toast.makeText(this, "Enter a valid WhatsApp number (e.g. 0123456789)", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val waUrl = Uri.parse("https://wa.me/$botNum?text=Hi%20StatHD")
+            saveUserPhone(normalized)
+            overlayBotSetupPopup.visibility = View.GONE
+            val waUrl = Uri.parse("https://wa.me/$BUILT_IN_BOT_PHONE?text=Hi%20StatHD")
             startActivity(Intent(Intent.ACTION_VIEW, waUrl))
+        }
+
+        btnSavePhoneOnly.setOnClickListener {
+            val normalized = normalizePhoneNumber(etUserPhone.text.toString())
+            if (normalized.length < 9) {
+                Toast.makeText(this, "Enter a valid WhatsApp number (e.g. 0123456789)", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            saveUserPhone(normalized)
+            overlayBotSetupPopup.visibility = View.GONE
+            Toast.makeText(this, "WhatsApp number saved ($normalized)!", Toast.LENGTH_SHORT).show()
         }
 
         btnShareWhatsApp.setOnClickListener {
@@ -1169,27 +1172,29 @@ class MainActivity : AppCompatActivity() {
         overlayResultPopup.visibility = View.VISIBLE
     }
 
+    private fun normalizePhoneNumber(raw: String): String {
+        val digits = raw.replace(Regex("[^0-9]"), "")
+        return if (digits.startsWith("0")) "60" + digits.substring(1) else digits
+    }
+
+    private fun saveUserPhone(phone: String) {
+        val prefs = getSharedPreferences("stathd_bot_prefs", MODE_PRIVATE)
+        prefs.edit().putString("user_phone", phone).apply()
+    }
+
     private fun loadSavedBotPrefs() {
         val prefs = getSharedPreferences("stathd_bot_prefs", MODE_PRIVATE)
-        etBotUrl.setText(prefs.getString("bot_url", ""))
         etUserPhone.setText(prefs.getString("user_phone", ""))
-        etBotPhone.setText(prefs.getString("bot_phone", ""))
     }
 
     private fun dispatchToWhatsAppBot(file: File) {
         val prefs = getSharedPreferences("stathd_bot_prefs", MODE_PRIVATE)
-        val botUrl = prefs.getString("bot_url", "")?.trim() ?: ""
         val userPhone = prefs.getString("user_phone", "")?.trim() ?: ""
 
-        if (botUrl.isEmpty() || userPhone.length < 8) {
+        if (userPhone.length < 9) {
             overlayResultPopup.visibility = View.GONE
             loadSavedBotPrefs()
             overlayBotSetupPopup.visibility = View.VISIBLE
-            Toast.makeText(
-                this,
-                "Set your Cloudflare Bot URL & WhatsApp Number first",
-                Toast.LENGTH_LONG
-            ).show()
             return
         }
 
@@ -1208,7 +1213,7 @@ class MainActivity : AppCompatActivity() {
         val photoFlag = isPhotoMode
         thread(start = true) {
             val res = WhatsAppBotUploader.uploadToBot(
-                botBaseUrl = botUrl,
+                botBaseUrl = BUILT_IN_BOT_URL,
                 recipientPhone = userPhone,
                 file = file,
                 isPhoto = photoFlag

@@ -33,32 +33,32 @@ jobs:
 
       - name: Prepare Beta APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.5-beta.apk
-          ls -lh StatHD-v1.4.5-beta.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.6-beta.apk
+          ls -lh StatHD-v1.4.6-beta.apk
 
       - name: Upload Beta APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-Beta-APK
-          path: StatHD-v1.4.5-beta.apk
+          path: StatHD-v1.4.6-beta.apk
           if-no-files-found: error
 
       - name: Publish Pre-Release Beta APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.5-beta
-          name: "StatHD v1.4.5-beta — Free WhatsApp Cloud API Bot Delivery (True 1080p Bypass)"
+          tag_name: v1.4.6-beta
+          name: "StatHD v1.4.6-beta — 1-Tap PureStatus-Style Auto-Auth & Built-In 1080p Bot"
           body: |
-            ### StatHD v1.4.5-beta (True 1080p WhatsApp Cloud API Bot Build)
+            ### StatHD v1.4.6-beta (1-Tap Built-In True 1080p Bot)
             > **Note:** Active **Beta / Pre-Release** build (`prerelease: true`).
 
-            #### New in v1.4.5-beta:
-            - **Send via HD Bot (True 1080p Bypass):** Streams your untouched `1080p` MP4 (up to `16 MB`) directly through your free **Cloudflare Worker (`stathd-bot`)** to **Meta WhatsApp Cloud API**, completely bypassing WhatsApp Android's `720p` / `3.9 MB` local compressor!
-            - **WhatsApp HD Bot Setup Dialog** inside Hamburger Menu (`☰`) with 1-tap **"Step 1: Open Bot Chat & Say Hi"** to activate the free 24-hour Meta Service Window.
-            - Includes full `stathd-bot/` Cloudflare Worker source code in the repository.
+            #### New in v1.4.6-beta:
+            - **Zero Link Copy-Paste:** Cloudflare Worker Bot URL & Meta Bot Number are now built directly into StatHD!
+            - **1-Tap Auto-Auth & Redirect:** Enter your WhatsApp number (auto-formats `01x` ➔ `601x`), tap **Register & Open WhatsApp Bot**, send `Hi StatHD` once, and tap **Send via HD Bot (True 1080p)** to receive untouched `1080p` videos straight in WhatsApp!
+            - **1080p Full HD • Max 15MB** is now the default preset.
 
             **Direct Beta APK Download:**
-            Tap **`StatHD-v1.4.5-beta.apk`** under **Assets** below to install on your Android device.
-          files: StatHD-v1.4.5-beta.apk
+            Tap **`StatHD-v1.4.6-beta.apk`** under **Assets** below to install on your Android device.
+          files: StatHD-v1.4.6-beta.apk
           draft: false
           prerelease: true
