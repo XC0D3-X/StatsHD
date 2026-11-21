@@ -20,6 +20,8 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -27,6 +29,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.SeekBar
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.VideoView
@@ -66,6 +69,38 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val BUILT_IN_BOT_URL = "https://stathd-bot.xxxlocal7.workers.dev"
         private const val BUILT_IN_BOT_PHONE = "15551365462"
+
+        private val COUNTRIES = listOf(
+            "Malaysia (+60)" to "+60",
+            "Indonesia (+62)" to "+62",
+            "Singapore (+65)" to "+65",
+            "Brunei (+673)" to "+673",
+            "Thailand (+66)" to "+66",
+            "Philippines (+63)" to "+63",
+            "Vietnam (+84)" to "+84",
+            "India (+91)" to "+91",
+            "Pakistan (+92)" to "+92",
+            "Bangladesh (+880)" to "+880",
+            "United States / Canada (+1)" to "+1",
+            "United Kingdom (+44)" to "+44",
+            "Australia (+61)" to "+61",
+            "Germany (+49)" to "+49",
+            "France (+33)" to "+33",
+            "Spain (+34)" to "+34",
+            "Italy (+39)" to "+39",
+            "Netherlands (+31)" to "+31",
+            "Brazil (+55)" to "+55",
+            "Mexico (+52)" to "+52",
+            "Saudi Arabia (+966)" to "+966",
+            "UAE (+971)" to "+971",
+            "Turkey (+90)" to "+90",
+            "Egypt (+20)" to "+20",
+            "Nigeria (+234)" to "+234",
+            "South Africa (+27)" to "+27",
+            "Japan (+81)" to "+81",
+            "South Korea (+82)" to "+82",
+            "Other (Type Custom Code)" to "+"
+        )
     }
 
     enum class StatusPreset(
@@ -156,6 +191,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnOpenBotSetup: LinearLayout
     private lateinit var overlayBotSetupPopup: FrameLayout
     private lateinit var btnCloseBotSetup: ImageButton
+    private lateinit var spinnerCountry: Spinner
+    private lateinit var etCountryCode: EditText
     private lateinit var etUserPhone: EditText
     private lateinit var btnSaveBotConfig: MaterialButton
     private lateinit var btnSavePhoneOnly: MaterialButton
@@ -291,9 +328,23 @@ class MainActivity : AppCompatActivity() {
         btnOpenBotSetup = findViewById(R.id.btnOpenBotSetup)
         overlayBotSetupPopup = findViewById(R.id.overlayBotSetupPopup)
         btnCloseBotSetup = findViewById(R.id.btnCloseBotSetup)
+        spinnerCountry = findViewById(R.id.spinnerCountry)
+        etCountryCode = findViewById(R.id.etCountryCode)
         etUserPhone = findViewById(R.id.etUserPhone)
         btnSaveBotConfig = findViewById(R.id.btnSaveBotConfig)
         btnSavePhoneOnly = findViewById(R.id.btnSavePhoneOnly)
+
+        val countryLabels = COUNTRIES.map { it.first }
+        val countryAdapter = ArrayAdapter(this, R.layout.item_country_spinner, countryLabels)
+        countryAdapter.setDropDownViewResource(R.layout.item_country_spinner)
+        spinnerCountry.adapter = countryAdapter
+        spinnerCountry.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val code = COUNTRIES[position].second
+                etCountryCode.setText(code)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
         loadSavedBotPrefs()
     }
 
@@ -435,26 +486,26 @@ class MainActivity : AppCompatActivity() {
         overlayBotSetupPopup.setOnClickListener { overlayBotSetupPopup.visibility = View.GONE }
 
         btnSaveBotConfig.setOnClickListener {
-            val normalized = normalizePhoneNumber(etUserPhone.text.toString())
-            if (normalized.length < 9) {
-                Toast.makeText(this, "Enter a valid WhatsApp number (e.g. 0123456789)", Toast.LENGTH_SHORT).show()
+            val fullNumber = buildInternationalNumber()
+            if (fullNumber.length < 9) {
+                Toast.makeText(this, "Enter a valid country code and phone number", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            saveUserPhone(normalized)
+            saveUserPhone(fullNumber)
             overlayBotSetupPopup.visibility = View.GONE
             val waUrl = Uri.parse("https://wa.me/$BUILT_IN_BOT_PHONE?text=Hi%20StatHD")
             startActivity(Intent(Intent.ACTION_VIEW, waUrl))
         }
 
         btnSavePhoneOnly.setOnClickListener {
-            val normalized = normalizePhoneNumber(etUserPhone.text.toString())
-            if (normalized.length < 9) {
-                Toast.makeText(this, "Enter a valid WhatsApp number (e.g. 0123456789)", Toast.LENGTH_SHORT).show()
+            val fullNumber = buildInternationalNumber()
+            if (fullNumber.length < 9) {
+                Toast.makeText(this, "Enter a valid country code and phone number", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            saveUserPhone(normalized)
+            saveUserPhone(fullNumber)
             overlayBotSetupPopup.visibility = View.GONE
-            Toast.makeText(this, "WhatsApp number saved ($normalized)!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "WhatsApp number saved (+$fullNumber)!", Toast.LENGTH_SHORT).show()
         }
 
         btnShareWhatsApp.setOnClickListener {
@@ -1192,19 +1243,35 @@ class MainActivity : AppCompatActivity() {
         overlayResultPopup.visibility = View.VISIBLE
     }
 
-    private fun normalizePhoneNumber(raw: String): String {
-        val digits = raw.replace(Regex("[^0-9]"), "")
-        return if (digits.startsWith("0")) "60" + digits.substring(1) else digits
+    private fun buildInternationalNumber(): String {
+        val ccDigits = etCountryCode.text.toString().replace(Regex("[^0-9]"), "")
+        val localDigits = etUserPhone.text.toString().replace(Regex("[^0-9]"), "").trimStart('0')
+        if (ccDigits.isEmpty() || localDigits.isEmpty()) return ""
+        return if (localDigits.startsWith(ccDigits) && localDigits.length > ccDigits.length + 7) {
+            localDigits
+        } else {
+            ccDigits + localDigits
+        }
     }
 
-    private fun saveUserPhone(phone: String) {
+    private fun saveUserPhone(fullNumber: String) {
         val prefs = getSharedPreferences("stathd_bot_prefs", MODE_PRIVATE)
-        prefs.edit().putString("user_phone", phone).apply()
+        prefs.edit()
+            .putString("user_phone", fullNumber)
+            .putString("country_code", etCountryCode.text.toString().trim())
+            .putString("local_phone", etUserPhone.text.toString().trim())
+            .putInt("country_index", spinnerCountry.selectedItemPosition)
+            .apply()
     }
 
     private fun loadSavedBotPrefs() {
         val prefs = getSharedPreferences("stathd_bot_prefs", MODE_PRIVATE)
-        etUserPhone.setText(prefs.getString("user_phone", ""))
+        val savedIndex = prefs.getInt("country_index", 0).coerceIn(0, COUNTRIES.lastIndex)
+        spinnerCountry.setSelection(savedIndex)
+        val savedCode = prefs.getString("country_code", COUNTRIES[savedIndex].second) ?: "+60"
+        etCountryCode.setText(savedCode)
+        val savedLocal = prefs.getString("local_phone", "") ?: ""
+        etUserPhone.setText(savedLocal)
     }
 
     private fun dispatchToWhatsAppBot(file: File) {

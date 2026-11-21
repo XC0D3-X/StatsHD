@@ -33,32 +33,31 @@ jobs:
 
       - name: Prepare Beta APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.8-beta.apk
-          ls -lh StatHD-v1.4.8-beta.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.9-beta.apk
+          ls -lh StatHD-v1.4.9-beta.apk
 
       - name: Upload Beta APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-Beta-APK
-          path: StatHD-v1.4.8-beta.apk
+          path: StatHD-v1.4.9-beta.apk
           if-no-files-found: error
 
       - name: Publish Pre-Release Beta APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.8-beta
-          name: "StatHD v1.4.8-beta — Native 1:1 Pixel Preservation (Up to 2200px) + H.264 High Profile CABAC"
+          tag_name: v1.4.9-beta
+          name: "StatHD v1.4.9-beta — International Country Code Selector (Telegram-Style)"
           body: |
-            ### StatHD v1.4.8-beta (Razor-Sharp Native 1:1 Text & H.264 High Profile Build)
+            ### StatHD v1.4.9-beta (Global Country Code Selector)
             > **Note:** Active **Beta / Pre-Release** build (`prerelease: true`).
 
-            #### Fixed in v1.4.8-beta:
-            - **Zero Fractional Bilinear Downscale Blur (`2200px` Native Cap):** Phone screen recordings like `1220x2168` now preserve **1:1 native pixels** instead of being bilinearly shrunk from `1220x2168` ➔ `1080x1920`, keeping fine usernames (`Syamir 969`) and numbers razor-sharp!
-            - **Forced H.264 High Profile (`AVCProfileHigh` / `Level 4.2` — CABAC + 8x8 DCT):** Replaces Android's default soft Baseline Profile with High Profile (with automatic fallback for older devices).
-            - **5.6 Mbps / 13.4 MB Safe Ceiling:** Maximizes crispness while staying strictly under Meta WhatsApp Cloud API's `16.0 MB` limit.
+            #### New in v1.4.9-beta:
+            - **Telegram-Style International Country Code Selector:** Supports users worldwide with a country picker dropdown (`+60`, `+62`, `+65`, `+1`, `+44`, `+91`, `+61`, etc.) plus a custom editable `+XX` country code box for any country on Earth.
+            - Automatically strips leading `0` from local numbers and remembers your selected country & number.
 
             **Direct Beta APK Download:**
-            Tap **`StatHD-v1.4.8-beta.apk`** under **Assets** below to install on your Android device.
-          files: StatHD-v1.4.8-beta.apk
+            Tap **`StatHD-v1.4.9-beta.apk`** under **Assets** below to install on your Android device.
+          files: StatHD-v1.4.9-beta.apk
           draft: false
           prerelease: true

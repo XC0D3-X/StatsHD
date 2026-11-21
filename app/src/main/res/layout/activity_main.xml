@@ -657,7 +657,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="StatHD v1.4.8-beta"
+                android:text="StatHD v1.4.9-beta"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -1183,22 +1183,62 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="Country"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <Spinner
+                android:id="@+id/spinnerCountry"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_preset_unselected"
+                android:paddingHorizontal="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
                 android:text="Your WhatsApp Number"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
 
-            <EditText
-                android:id="@+id/etUserPhone"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="46dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:background="@drawable/bg_preset_unselected"
-                android:hint="e.g. 0123456789 or 60123456789"
-                android:inputType="phone"
-                android:paddingHorizontal="12dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_muted"
-                android:textSize="14sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etCountryCode"
+                    android:layout_width="76dp"
+                    android:layout_height="46dp"
+                    android:background="@drawable/bg_preset_unselected"
+                    android:gravity="center"
+                    android:hint="+60"
+                    android:inputType="phone"
+                    android:maxLength="5"
+                    android:text="+60"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_muted"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/etUserPhone"
+                    android:layout_width="0dp"
+                    android:layout_height="46dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_preset_unselected"
+                    android:hint="123456789"
+                    android:inputType="phone"
+                    android:paddingHorizontal="12dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_muted"
+                    android:textSize="14sp" />
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveBotConfig"
