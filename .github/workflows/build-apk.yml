@@ -33,34 +33,32 @@ jobs:
 
       - name: Prepare Beta APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.2-beta.apk
-          ls -lh StatHD-v1.4.2-beta.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.3-beta.apk
+          ls -lh StatHD-v1.4.3-beta.apk
 
       - name: Upload Beta APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-Beta-APK
-          path: StatHD-v1.4.2-beta.apk
+          path: StatHD-v1.4.3-beta.apk
           if-no-files-found: error
 
       - name: Publish Pre-Release Beta APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.2-beta
-          name: "StatHD v1.4.2-beta — HD Photo Optimizer + Unified Video & Photo Picker"
+          tag_name: v1.4.3-beta
+          name: "StatHD v1.4.3-beta — 1080p Full HD Preset (Chat HD ➔ Forward) + HD Photo Optimizer"
           body: |
-            ### StatHD v1.4.2-beta (Pre-Release Testing Build)
+            ### StatHD v1.4.3-beta (Pre-Release Testing Build)
             > **Note:** Active **Beta / Pre-Release** build (`prerelease: true`).
 
-            #### New in v1.4.2-beta:
-            - **HD Photo Optimizer for WhatsApp Status (`HdPhotoOptimizer.kt`):**
-              - Unified `+` button & Gallery Share sheet now accept **both Videos and Photos**.
-              - Auto-fixes EXIF orientation, downscales smoothly to WhatsApp's HD photo sweet spot (`1600px` / `2048px`, never upscales), applies fast unsharp-mask edge sharpening & subtle vibrance pop, and saves crisp JPEG Q92 files to `Pictures/StatHD` or directly to WhatsApp Status.
-              - Supports live draggable **Original | Split | Enhanced** Before & After comparison for photos too!
-            - **No More Forced Re-Export After Compare:** Bottom bar switches to **`Re-Export`** + **`Share / Save`** once export finishes.
+            #### New in v1.4.3-beta:
+            - **1080p Full HD • 30s Preset (`5.0 Mbps` • `1080x1920` • up to `15.5 MB`):** Added specifically for the **True HD Chat-Forward** workflow (`Share to Message Yourself` ➔ tap **`HD`** ➔ **Forward to My Status**) to completely bypass WhatsApp Status's `3.9 MB` local compression.
+            - **Built-in True HD Tip** inside the Export Complete popup.
+            - Includes all `v1.4.2-beta` features (**HD Photo Optimizer**, **Before/After Split Compare**, **Zero-Scroll Vector UI**, and **Dual-Radius 3x3+7x7 Wink GPU Shader**).
 
             **Direct Beta APK Download:**
-            Tap **`StatHD-v1.4.2-beta.apk`** under **Assets** below to install on your Android device.
-          files: StatHD-v1.4.2-beta.apk
+            Tap **`StatHD-v1.4.3-beta.apk`** under **Assets** below to install on your Android device.
+          files: StatHD-v1.4.3-beta.apk
           draft: false
           prerelease: true

@@ -567,7 +567,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="StatHD v1.4.2-beta"
+                android:text="StatHD v1.4.3-beta"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -623,10 +623,38 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/cardPreset30"
+                android:id="@+id/cardPreset1080"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                android:background="@drawable/bg_preset_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:orientation="vertical"
+                android:padding="13dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1080p Full HD • 30s (Chat HD ➔ Forward)"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="5.0 Mbps H.264 • Send to Message Yourself as HD, then Forward to Status"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/cardPreset30"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/bg_preset_selected"
                 android:clickable="true"
                 android:focusable="true"
@@ -766,6 +794,15 @@
                 android:text="720x1280 • 7.9 MB • 3.2 Mbps H.264"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tvHdForwardTip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="True HD Tip: Share to Message Yourself ➔ tap HD ➔ Forward to My Status (bypasses 3.9 MB compression)."
+                android:textColor="@color/accent_blue_light"
+                android:textSize="11sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCompareNow"

@@ -65,11 +65,13 @@ class MainActivity : AppCompatActivity() {
         val pillLabel: String,
         val maxClipDurationMs: Long,
         val maxLongSidePx: Int,
-        val maxBitrateBps: Int
+        val maxBitrateBps: Int,
+        val maxFileSizeMb: Double
     ) {
-        CLIP_30S_ULTRA("720p HD • 30s", 30_000L, 1280, 3_200_000),
-        CLIP_45S_HD("720p HD • 45s", 45_000L, 1280, 1_800_000),
-        CLIP_60S_FULL("720p HD • 60s", 60_000L, 1280, 1_380_000)
+        CLIP_30S_1080P("1080p FHD • 30s", 30_000L, 1920, 5_000_000, 15.5),
+        CLIP_30S_ULTRA("720p HD • 30s", 30_000L, 1280, 3_200_000, 10.2),
+        CLIP_45S_HD("720p HD • 45s", 45_000L, 1280, 1_800_000, 10.2),
+        CLIP_60S_FULL("720p HD • 60s", 60_000L, 1280, 1_380_000, 10.2)
     }
 
     enum class CompareMode {
@@ -125,6 +127,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var overlayPresetPopup: FrameLayout
     private lateinit var btnClosePreset: ImageButton
+    private lateinit var cardPreset1080: LinearLayout
     private lateinit var cardPreset30: LinearLayout
     private lateinit var cardPreset45: LinearLayout
     private lateinit var cardPreset60: LinearLayout
@@ -245,6 +248,7 @@ class MainActivity : AppCompatActivity() {
 
         overlayPresetPopup = findViewById(R.id.overlayPresetPopup)
         btnClosePreset = findViewById(R.id.btnClosePreset)
+        cardPreset1080 = findViewById(R.id.cardPreset1080)
         cardPreset30 = findViewById(R.id.cardPreset30)
         cardPreset45 = findViewById(R.id.cardPreset45)
         cardPreset60 = findViewById(R.id.cardPreset60)
@@ -282,6 +286,7 @@ class MainActivity : AppCompatActivity() {
         btnClosePreset.setOnClickListener { overlayPresetPopup.visibility = View.GONE }
         overlayPresetPopup.setOnClickListener { overlayPresetPopup.visibility = View.GONE }
 
+        cardPreset1080.setOnClickListener { selectPreset(StatusPreset.CLIP_30S_1080P) }
         cardPreset30.setOnClickListener { selectPreset(StatusPreset.CLIP_30S_ULTRA) }
         cardPreset45.setOnClickListener { selectPreset(StatusPreset.CLIP_45S_HD) }
         cardPreset60.setOnClickListener { selectPreset(StatusPreset.CLIP_60S_FULL) }
@@ -397,6 +402,9 @@ class MainActivity : AppCompatActivity() {
     private fun selectPreset(preset: StatusPreset) {
         currentPreset = preset
         tvPresetPill.text = preset.pillLabel
+        cardPreset1080.setBackgroundResource(
+            if (preset == StatusPreset.CLIP_30S_1080P) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
+        )
         cardPreset30.setBackgroundResource(
             if (preset == StatusPreset.CLIP_30S_ULTRA) R.drawable.bg_preset_selected else R.drawable.bg_preset_unselected
         )
@@ -924,7 +932,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val audioBitrateBps = if (switchMuteAudio.isChecked) 0 else 128_000
-        val maxTotalBits = 10.2 * 1024.0 * 1024.0 * 8.0
+        val maxTotalBits = currentPreset.maxFileSizeMb * 1024.0 * 1024.0 * 8.0
         val maxSafeVideoBps = ((maxTotalBits / clipDurationSec) - audioBitrateBps).toInt()
         return min(currentPreset.maxBitrateBps, max(900_000, maxSafeVideoBps))
     }
