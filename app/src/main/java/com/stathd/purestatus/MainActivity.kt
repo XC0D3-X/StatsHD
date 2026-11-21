@@ -109,6 +109,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvProgressStatus: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var btnOptimize: MaterialButton
+    private lateinit var layoutReadyActions: LinearLayout
+    private lateinit var btnReExport: MaterialButton
+    private lateinit var btnOpenSharePopup: MaterialButton
 
     // Popups
     private lateinit var overlayMenuPopup: FrameLayout
@@ -217,6 +220,9 @@ class MainActivity : AppCompatActivity() {
         tvProgressStatus = findViewById(R.id.tvProgressStatus)
         progressBar = findViewById(R.id.progressBar)
         btnOptimize = findViewById(R.id.btnOptimize)
+        layoutReadyActions = findViewById(R.id.layoutReadyActions)
+        btnReExport = findViewById(R.id.btnReExport)
+        btnOpenSharePopup = findViewById(R.id.btnOpenSharePopup)
 
         overlayMenuPopup = findViewById(R.id.overlayMenuPopup)
         btnCloseMenu = findViewById(R.id.btnCloseMenu)
@@ -330,6 +336,16 @@ class MainActivity : AppCompatActivity() {
             selectedVideoUri?.let { executeOptimization(it) }
         }
 
+        btnReExport.setOnClickListener {
+            selectedVideoUri?.let { executeOptimization(it) }
+        }
+
+        btnOpenSharePopup.setOnClickListener {
+            if (outputVideoFile != null) {
+                overlayResultPopup.visibility = View.VISIBLE
+            }
+        }
+
         // Result popup actions
         btnCloseResult.setOnClickListener { overlayResultPopup.visibility = View.GONE }
         overlayResultPopup.setOnClickListener { overlayResultPopup.visibility = View.GONE }
@@ -386,6 +402,8 @@ class MainActivity : AppCompatActivity() {
         layoutCompareBar.visibility = View.GONE
         layoutSplitCompare.visibility = View.GONE
         layoutEmptyState.visibility = View.GONE
+        layoutReadyActions.visibility = View.GONE
+        btnOptimize.visibility = View.VISIBLE
         videoPreview.visibility = View.VISIBLE
         btnOptimize.isEnabled = true
         btnPlayPause.isEnabled = true
@@ -864,17 +882,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun setBusyUi(busy: Boolean, message: String) {
         btnOptimize.isEnabled = !busy
+        btnReExport.isEnabled = !busy
+        btnOpenSharePopup.isEnabled = !busy
         fabPickVideo.isEnabled = !busy
-        layoutProgress.visibility = if (busy) View.VISIBLE else View.GONE
         if (busy) {
+            layoutReadyActions.visibility = View.GONE
+            btnOptimize.visibility = View.VISIBLE
             progressBar.progress = 0
             tvProgressStatus.text = message
         }
+        layoutProgress.visibility = if (busy) View.VISIBLE else View.GONE
     }
 
     private fun onExportFinished(outFile: File, targetBitrateBps: Int, targetDims: Pair<Int, Int>?) {
         activeTransformer = null
         setBusyUi(false, "")
+        btnOptimize.visibility = View.GONE
+        layoutReadyActions.visibility = View.VISIBLE
 
         val newSizeMb = outFile.length() / (1024.0 * 1024.0)
         val effW = if (switchRotateVertical.isChecked) sourceHeight else sourceWidth

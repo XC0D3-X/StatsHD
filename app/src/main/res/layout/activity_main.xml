@@ -415,6 +415,46 @@
                 app:iconGravity="textStart"
                 app:iconPadding="8dp"
                 app:iconTint="#FFFFFF" />
+
+            <!-- Appears after export so user can compare freely and Share/Save without re-exporting -->
+            <LinearLayout
+                android:id="@+id/layoutReadyActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReExport"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:text="Re-Export"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    app:cornerRadius="10dp"
+                    app:strokeColor="@color/border_slate" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenSharePopup"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1.5"
+                    android:text="Share / Save"
+                    android:textAllCaps="false"
+                    android:textColor="#07130B"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/whatsapp_green"
+                    app:cornerRadius="10dp"
+                    app:icon="@drawable/ic_share"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    app:iconTint="#07130B" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
@@ -527,7 +567,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="StatHD v1.4.0-beta"
+                android:text="StatHD v1.4.1-beta"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp" />
         </LinearLayout>

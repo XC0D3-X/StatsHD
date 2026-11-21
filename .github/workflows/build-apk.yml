@@ -33,34 +33,30 @@ jobs:
 
       - name: Prepare Beta APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.0-beta.apk
-          ls -lh StatHD-v1.4.0-beta.apk
+          cp app/build/outputs/apk/release/app-release.apk StatHD-v1.4.1-beta.apk
+          ls -lh StatHD-v1.4.1-beta.apk
 
       - name: Upload Beta APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StatHD-WhatsApp-Status-HD-Beta-APK
-          path: StatHD-v1.4.0-beta.apk
+          path: StatHD-v1.4.1-beta.apk
           if-no-files-found: error
 
       - name: Publish Pre-Release Beta APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.0-beta
-          name: "StatHD v1.4.0-beta — Clean Vector UI, Video Timeline & Before/After Split Preview"
+          tag_name: v1.4.1-beta
+          name: "StatHD v1.4.1-beta — Instant Share / Save After Compare Fix"
           body: |
-            ### StatHD v1.4.0-beta (Pre-Release Testing Build)
+            ### StatHD v1.4.1-beta (Pre-Release Testing Build)
             > **Note:** Active **Beta / Pre-Release** build (`prerelease: true`).
 
-            #### New in v1.4.0-beta:
-            - **Zero-Scroll Clean Native UI:** Replaced the old vertical scroll layout with a single-screen video editor layout, top Hamburger Settings drawer, Target Quality popup, and bottom-right `+` Floating Action Button.
-            - **100% Vector Icons (`res/drawable/ic_*.xml`):** Replaced all keyboard symbols/emojis with crisp Android VectorDrawables.
-            - **Interactive Video Timeline & Trim Controller:** Play/Pause, live timeline scrubber (`0:00 / 0:20`), and highlight clip trim slider.
-            - **Live Before / After & Split-Screen Comparison:** Switch between **Original**, **Split** (draggable pixel-accurate frame comparison), and **Enhanced** directly inside the app before sharing to WhatsApp Status.
-            - **Dual-Radius Wink GPU Shader (`3x3` + `7x7` Clarity):** Calibrated on portrait gameplay to survive WhatsApp's internal H.264 compression.
+            #### Fixed in v1.4.1-beta:
+            - **No More Forced Re-Export After Compare:** After tapping **Compare Before & After**, the bottom action bar now switches to **`Re-Export`** + **`Share / Save`** so you can immediately share to WhatsApp Status or save to Gallery without re-encoding your video again.
 
             **Direct Beta APK Download:**
-            Tap **`StatHD-v1.4.0-beta.apk`** under **Assets** below to install on your Android device.
-          files: StatHD-v1.4.0-beta.apk
+            Tap **`StatHD-v1.4.1-beta.apk`** under **Assets** below to install on your Android device.
+          files: StatHD-v1.4.1-beta.apk
           draft: false
           prerelease: true
