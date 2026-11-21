@@ -657,7 +657,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="StatHD v1.4.7-beta"
+                android:text="StatHD v1.4.8-beta"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp" />
         </LinearLayout>

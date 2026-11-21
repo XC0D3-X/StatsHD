@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.media.MediaCodec
+import android.media.MediaCodecInfo
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
@@ -74,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         val maxBitrateBps: Int,
         val maxFileSizeMb: Double
     ) {
-        CLIP_30S_1080P("1080p FHD • Max 14MB", 30_000L, 1920, 5_200_000, 12.8),
+        CLIP_30S_1080P("1080p+ Native • Max 14MB", 30_000L, 2200, 5_600_000, 13.4),
         CLIP_30S_ULTRA("720p HD • Max 10MB", 30_000L, 1280, 4_200_000, 9.6),
         CLIP_45S_HD("720p HD • 45s", 45_000L, 1280, 2_200_000, 9.6),
         CLIP_60S_FULL("720p HD • 60s", 60_000L, 1280, 1_500_000, 9.6)
@@ -1019,7 +1020,12 @@ class MainActivity : AppCompatActivity() {
         return min(currentPreset.maxBitrateBps, max(900_000, maxSafeVideoBps))
     }
 
-    private fun startStatHdTranscode(inputUri: Uri, outFile: File, allowHdrToneMap: Boolean) {
+    private fun startStatHdTranscode(
+        inputUri: Uri,
+        outFile: File,
+        allowHdrToneMap: Boolean,
+        useHighProfile: Boolean = true
+    ) {
         val targetBitrateBps = computeSafeVideoBitrateBps()
         val targetMbps = targetBitrateBps / 1_000_000.0
         setBusyUi(true, String.format(Locale.US, "Enhancing video (%.1f Mbps)... 0%%", targetMbps))
@@ -1072,10 +1078,18 @@ class MainActivity : AppCompatActivity() {
             compositionBuilder.setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_MEDIACODEC)
         }
 
-        val videoEncoderSettings = VideoEncoderSettings.Builder()
+        val encoderSettingsBuilder = VideoEncoderSettings.Builder()
             .setBitrate(targetBitrateBps)
             .setiFrameIntervalSeconds(1.0f)
-            .build()
+
+        if (useHighProfile) {
+            // Force H.264 High Profile (CABAC + 8x8 DCT) for razor-sharp text & UI edges instead of Baseline Profile
+            encoderSettingsBuilder.setEncodingProfileLevel(
+                MediaCodecInfo.CodecProfileLevel.AVCProfileHigh,
+                MediaCodecInfo.CodecProfileLevel.AVCLevel42
+            )
+        }
+        val videoEncoderSettings = encoderSettingsBuilder.build()
 
         val encoderFactory = DefaultEncoderFactory.Builder(this)
             .setRequestedVideoEncoderSettings(videoEncoderSettings)
@@ -1096,7 +1110,12 @@ class MainActivity : AppCompatActivity() {
                     exportException: ExportException
                 ) {
                     if (allowHdrToneMap) {
-                        startStatHdTranscode(inputUri, outFile, allowHdrToneMap = false)
+                        startStatHdTranscode(inputUri, outFile, allowHdrToneMap = false, useHighProfile = useHighProfile)
+                        return
+                    }
+                    if (useHighProfile) {
+                        // Graceful fallback if an older chipset does not support explicit AVCProfileHigh/Level42
+                        startStatHdTranscode(inputUri, outFile, allowHdrToneMap = false, useHighProfile = false)
                         return
                     }
                     setBusyUi(false, "")
