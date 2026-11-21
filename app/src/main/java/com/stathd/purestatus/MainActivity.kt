@@ -1016,7 +1016,6 @@ class MainActivity : AppCompatActivity() {
         val videoEncoderSettings = VideoEncoderSettings.Builder()
             .setBitrate(targetBitrateBps)
             .setiFrameIntervalSeconds(1.0f)
-            .experimentalSetEnableHighQualityTargeting(true)
             .build()
 
         val encoderFactory = DefaultEncoderFactory.Builder(this)
