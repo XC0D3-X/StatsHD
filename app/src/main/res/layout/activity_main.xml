@@ -569,6 +569,48 @@
                 android:layout_marginVertical="10dp"
                 android:background="@color/border_slate" />
 
+            <!-- WhatsApp HD Bot Setup Row inside Hamburger Menu -->
+            <LinearLayout
+                android:id="@+id/btnOpenBotSetup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/bg_preset_selected"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_bolt" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="WhatsApp HD Bot Setup (True 1080p)"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Connect your free Cloudflare + Meta Cloud API bot"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
             <!-- Step-by-Step True HD Guide Row inside Hamburger Menu -->
             <LinearLayout
                 android:id="@+id/btnOpenGuide"
@@ -614,7 +656,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="StatHD v1.4.4-beta"
+                android:text="StatHD v1.4.5-beta"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -885,6 +927,23 @@
                 app:strokeColor="@color/border_slate" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSendViaBot"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:text="Send via HD Bot (True 1080p)"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/accent_blue"
+                app:cornerRadius="10dp"
+                app:icon="@drawable/ic_bolt"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="#FFFFFF" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnShareWhatsApp"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
@@ -1053,6 +1112,153 @@
                 android:layout_width="match_parent"
                 android:layout_height="44dp"
                 android:text="Got It"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/accent_blue"
+                app:cornerRadius="10dp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- ========================================================= -->
+    <!-- POPUP 5: WHATSAPP HD BOT CONFIGURATION DIALOG             -->
+    <!-- ========================================================= -->
+    <FrameLayout
+        android:id="@+id/overlayBotSetupPopup"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#B8000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="20dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_dialog_dark"
+            android:clickable="true"
+            android:focusable="true"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingBottom="10dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="WhatsApp HD Bot Setup"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/btnCloseBotSetup"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Close"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_close" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="Delivers untouched 1080p HD videos directly to your WhatsApp chat via Meta Cloud API so you can Forward to Status with zero compression."
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cloudflare Worker Bot URL"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <EditText
+                android:id="@+id/etBotUrl"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_preset_unselected"
+                android:hint="https://stathd-bot.yourname.workers.dev"
+                android:inputType="textUri"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_muted"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Your WhatsApp Number (with country code, no +)"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <EditText
+                android:id="@+id/etUserPhone"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_preset_unselected"
+                android:hint="60123456789"
+                android:inputType="phone"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_muted"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Bot WhatsApp Number (optional, for 1-tap activation)"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <EditText
+                android:id="@+id/etBotPhone"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_preset_unselected"
+                android:hint="15551234567"
+                android:inputType="phone"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_muted"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSayHiToBot"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="12dp"
+                android:text="Step 1: Open Bot Chat &amp; Say Hi (24h Free Window)"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                app:cornerRadius="10dp"
+                app:strokeColor="@color/border_slate" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveBotConfig"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="8dp"
+                android:text="Save Bot Configuration"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
                 android:textSize="13sp"

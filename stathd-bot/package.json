@@ -1,0 +1,13 @@
+{
+  "name": "stathd-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zero-storage Cloudflare Worker bridge for StatHD True 1080p WhatsApp Cloud API delivery",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}

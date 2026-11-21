@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "stathd-bot",
+  "main": "src/index.js",
+  "compatibility_date": "2025-01-01",
+  "vars": {
+    "WEBHOOK_VERIFY_TOKEN": "stathd_verify_2026"
+  }
+  // Set sensitive secrets via CLI (never commit tokens to git):
+  //   npx wrangler secret put WHATSAPP_TOKEN
+  //   npx wrangler secret put WHATSAPP_PHONE_ID
+}

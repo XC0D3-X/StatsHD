@@ -19,6 +19,7 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.view.View
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -137,6 +138,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvResultSpecs: TextView
     private lateinit var boxHdForwardTip: LinearLayout
     private lateinit var btnCompareNow: MaterialButton
+    private lateinit var btnSendViaBot: MaterialButton
     private lateinit var btnShareWhatsApp: MaterialButton
     private lateinit var btnSaveGallery: MaterialButton
 
@@ -144,6 +146,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var overlayGuidePopup: FrameLayout
     private lateinit var btnCloseGuide: ImageButton
     private lateinit var btnGotItGuide: MaterialButton
+
+    private lateinit var btnOpenBotSetup: LinearLayout
+    private lateinit var overlayBotSetupPopup: FrameLayout
+    private lateinit var btnCloseBotSetup: ImageButton
+    private lateinit var etBotUrl: EditText
+    private lateinit var etUserPhone: EditText
+    private lateinit var etBotPhone: EditText
+    private lateinit var btnSayHiToBot: MaterialButton
+    private lateinit var btnSaveBotConfig: MaterialButton
 
     // Media State
     private var selectedMediaUri: Uri? = null
@@ -264,6 +275,7 @@ class MainActivity : AppCompatActivity() {
         tvResultSpecs = findViewById(R.id.tvResultSpecs)
         boxHdForwardTip = findViewById(R.id.boxHdForwardTip)
         btnCompareNow = findViewById(R.id.btnCompareNow)
+        btnSendViaBot = findViewById(R.id.btnSendViaBot)
         btnShareWhatsApp = findViewById(R.id.btnShareWhatsApp)
         btnSaveGallery = findViewById(R.id.btnSaveGallery)
 
@@ -271,6 +283,16 @@ class MainActivity : AppCompatActivity() {
         overlayGuidePopup = findViewById(R.id.overlayGuidePopup)
         btnCloseGuide = findViewById(R.id.btnCloseGuide)
         btnGotItGuide = findViewById(R.id.btnGotItGuide)
+
+        btnOpenBotSetup = findViewById(R.id.btnOpenBotSetup)
+        overlayBotSetupPopup = findViewById(R.id.overlayBotSetupPopup)
+        btnCloseBotSetup = findViewById(R.id.btnCloseBotSetup)
+        etBotUrl = findViewById(R.id.etBotUrl)
+        etUserPhone = findViewById(R.id.etUserPhone)
+        etBotPhone = findViewById(R.id.etBotPhone)
+        btnSayHiToBot = findViewById(R.id.btnSayHiToBot)
+        btnSaveBotConfig = findViewById(R.id.btnSaveBotConfig)
+        loadSavedBotPrefs()
     }
 
     private fun setupListeners() {
@@ -396,6 +418,39 @@ class MainActivity : AppCompatActivity() {
         btnCompareNow.setOnClickListener {
             overlayResultPopup.visibility = View.GONE
             switchCompareMode(CompareMode.SPLIT)
+        }
+
+        btnSendViaBot.setOnClickListener {
+            outputMediaFile?.let { dispatchToWhatsAppBot(it) }
+        }
+
+        btnOpenBotSetup.setOnClickListener {
+            overlayMenuPopup.visibility = View.GONE
+            loadSavedBotPrefs()
+            overlayBotSetupPopup.visibility = View.VISIBLE
+        }
+        btnCloseBotSetup.setOnClickListener { overlayBotSetupPopup.visibility = View.GONE }
+        overlayBotSetupPopup.setOnClickListener { overlayBotSetupPopup.visibility = View.GONE }
+
+        btnSaveBotConfig.setOnClickListener {
+            val prefs = getSharedPreferences("stathd_bot_prefs", MODE_PRIVATE)
+            prefs.edit()
+                .putString("bot_url", etBotUrl.text.toString().trim())
+                .putString("user_phone", etUserPhone.text.toString().replace(Regex("[^0-9]"), ""))
+                .putString("bot_phone", etBotPhone.text.toString().replace(Regex("[^0-9]"), ""))
+                .apply()
+            overlayBotSetupPopup.visibility = View.GONE
+            Toast.makeText(this, "Bot configuration saved!", Toast.LENGTH_SHORT).show()
+        }
+
+        btnSayHiToBot.setOnClickListener {
+            val botNum = etBotPhone.text.toString().replace(Regex("[^0-9]"), "")
+            if (botNum.length < 7) {
+                Toast.makeText(this, "Enter the Bot WhatsApp Number first (from Meta API Setup)", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val waUrl = Uri.parse("https://wa.me/$botNum?text=Hi%20StatHD")
+            startActivity(Intent(Intent.ACTION_VIEW, waUrl))
         }
 
         btnShareWhatsApp.setOnClickListener {
@@ -1112,6 +1167,61 @@ class MainActivity : AppCompatActivity() {
         layoutCompareBar.visibility = View.VISIBLE
         switchCompareMode(CompareMode.ENHANCED)
         overlayResultPopup.visibility = View.VISIBLE
+    }
+
+    private fun loadSavedBotPrefs() {
+        val prefs = getSharedPreferences("stathd_bot_prefs", MODE_PRIVATE)
+        etBotUrl.setText(prefs.getString("bot_url", ""))
+        etUserPhone.setText(prefs.getString("user_phone", ""))
+        etBotPhone.setText(prefs.getString("bot_phone", ""))
+    }
+
+    private fun dispatchToWhatsAppBot(file: File) {
+        val prefs = getSharedPreferences("stathd_bot_prefs", MODE_PRIVATE)
+        val botUrl = prefs.getString("bot_url", "")?.trim() ?: ""
+        val userPhone = prefs.getString("user_phone", "")?.trim() ?: ""
+
+        if (botUrl.isEmpty() || userPhone.length < 8) {
+            overlayResultPopup.visibility = View.GONE
+            loadSavedBotPrefs()
+            overlayBotSetupPopup.visibility = View.VISIBLE
+            Toast.makeText(
+                this,
+                "Set your Cloudflare Bot URL & WhatsApp Number first",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        if (file.length() > 16L * 1024L * 1024L) {
+            Toast.makeText(
+                this,
+                "File exceeds WhatsApp Cloud API 16 MB limit. Try a shorter clip.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        btnSendViaBot.isEnabled = false
+        btnSendViaBot.text = "Sending True 1080p to WhatsApp..."
+
+        val photoFlag = isPhotoMode
+        thread(start = true) {
+            val res = WhatsAppBotUploader.uploadToBot(
+                botBaseUrl = botUrl,
+                recipientPhone = userPhone,
+                file = file,
+                isPhoto = photoFlag
+            )
+            mainHandler.post {
+                btnSendViaBot.isEnabled = true
+                btnSendViaBot.text = "Send via HD Bot (True 1080p)"
+                Toast.makeText(this, res.message, Toast.LENGTH_LONG).show()
+                if (res.success) {
+                    overlayResultPopup.visibility = View.GONE
+                }
+            }
+        }
     }
 
     private fun shareToWhatsApp(file: File) {
