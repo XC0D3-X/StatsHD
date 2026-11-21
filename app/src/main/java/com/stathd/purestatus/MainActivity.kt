@@ -900,7 +900,8 @@ class MainActivity : AppCompatActivity() {
             ((sourceBitrateBps / 8.0) * (clipDurMs / 1000.0)).toLong()
         }
 
-        return estimatedSliceBytes in 1..(11_800_000L)
+        val maxLosslessBytes = if (currentPreset == StatusPreset.CLIP_30S_1080P) 15_200_000L else 11_800_000L
+        return estimatedSliceBytes in 1..maxLosslessBytes
     }
 
     private fun computeSafeOutputDimensions(): Pair<Int, Int>? {

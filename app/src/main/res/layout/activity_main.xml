@@ -522,8 +522,8 @@
                 android:id="@+id/switchWinkRestore"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="Detail &amp; Edge Sharpening (Wink Mode)"
+                android:checked="false"
+                android:text="Detail &amp; Edge Sharpening (Optional Wink Filter)"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
@@ -531,7 +531,8 @@
                 android:id="@+id/switchWinkMax"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:checked="true"
+                android:checked="false"
+                android:enabled="false"
                 android:text="High Clarity Strength (3x3 + 7x7)"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp" />
